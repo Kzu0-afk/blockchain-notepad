@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Notes</title>
+</head>
+<body>
+    <h1>My Notes</h1>
+    <p>Welcome, {{ user.username }}!</p>
+
+    <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Log Out</button>
+    </form>
+
+    <a href="{% url 'note_create' %}">Create a New Note</a>
+
+    <hr>
+
+    {% for note in notes %}
+        <div>
+            <h2>{{ note.title }}</h2>
+            <p>{{ note.description }}</p>
+            <small>Last updated: {{ note.updatedAt }}</small>
+        </div>
+        <hr>
+    {% empty %}
+        <p>You haven't created any notes yet.</p>
+    {% endfor %}
+</body>
+</html>
