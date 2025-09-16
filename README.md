@@ -124,5 +124,3 @@ The foundation is built! Now we can divide the work to enhance the application. 
         *   Which Python libraries can we use to interact with a blockchain (e.g., `web3.py`)?
         *   How can we add a "Verify on Blockchain" button to a note, which would re-hash the content and check if it matches the hash stored on-chain?
     3.  **Prototype**: Set up a wallet and try to send a simple transaction with a data hash to a testnet. This task is about figuring out the *how* before we write the code.
-
-Let's coordinate on who takes which task. Great work getting us to this point!
