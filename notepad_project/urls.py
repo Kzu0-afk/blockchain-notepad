@@ -21,5 +21,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('notes.urls')), # This tells Django to look in notes/urls.py
+    # path('', include('notes.urls')), 
+    path('', include('notes.urls', namespace='notes')),
 ]

@@ -1,14 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sign Up</title>
-</head>
-<body>
+{% extends 'notes/base.html' %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="form-container">
     <h1>Sign Up</h1>
-    <form method="post">
+    <form method="post" id="signup-form">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Sign Up</button>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-group">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Sign Up</button>
     </form>
-</body>
-</html>
+    <p>Already have an account?
+        <a href="{% url 'notes:login' %}" class="btn btn-secondary">Log in here</a>
+    </p>
+</div>
+{% endblock %}

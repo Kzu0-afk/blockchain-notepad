@@ -1,24 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>New Note</title>
-</head>
-<body>
-    <h1>Create a New Note</h1>
+{% extends 'notes/base.html' %}
+{% block title %}{% if note %}Edit Note{% else %}Create Note{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>{% if note %}Edit Note{% else %}Create a New Note{% endif %}</h1>
     <form method="post">
         {% csrf_token %}
-        <div>
-            <label for="title">Title:</label><br>
-            <input type="text" id="title" name="title" required>
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" value="{{ note.title|default:'' }}" required>
         </div>
-        <br>
-        <div>
-            <label for="description">Description:</label><br>
-            <textarea id="description" name="description" rows="10" cols="50"></textarea>
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" rows="10" cols="50">{{ note.description|default:'' }}</textarea>
         </div>
-        <br>
-        <button type="submit">Save Note</button>
+        <button type="submit" class="btn btn-primary">Save Note</button>
+        <a href="{% url 'notes:note_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
-    <a href="{% url 'note_list' %}">Cancel</a>
-</body>
-</html>
+</div>
+{% endblock %}
