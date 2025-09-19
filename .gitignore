@@ -1,3 +1,18 @@
+
+# Gitignore for Django Project
+
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+static/
+.env
+venv/
+=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -205,3 +220,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
