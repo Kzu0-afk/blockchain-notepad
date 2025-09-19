@@ -9,7 +9,13 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="navbar-brand">My Notes</div>
+        <div class="navbar-brand">
+            {% if user.is_authenticated %}
+                <a href="{% url 'notes:note_list' %}" style="color: white; text-decoration: none;">My Notes</a>
+            {% else %}
+                <a href="{% url 'notes:landing' %}" style="color: white; text-decoration: none;">My Notes</a>
+            {% endif %}
+        </div>
         <div class="navbar-menu">
             {% if user.is_authenticated %}
                 <span>Welcome, {{ user.username }}!</span>

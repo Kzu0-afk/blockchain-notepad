@@ -6,6 +6,12 @@ from django.contrib import messages
 from django.http import HttpResponse
 from .models import Note
 
+def landing_view(request):
+    """Landing page for non-authenticated users"""
+    if request.user.is_authenticated:
+        return redirect('notes:note_list')
+    return render(request, 'notes/landing.html')
+
 @login_required
 def note_edit_view(request, pk):
     note = get_object_or_404(Note, pk=pk, createdBy=request.user)
@@ -55,7 +61,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.info(request, "Logged out.")
-    return redirect('notes:login')
+    return redirect('notes:landing')
 
 @login_required
 def note_list_view(request):
