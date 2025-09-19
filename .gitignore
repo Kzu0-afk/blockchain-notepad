@@ -21,6 +21,9 @@ __pycache__/
 # C extensions
 *.so
 
+#Database stuff
+db.sqlite3
+
 # Distribution / packaging
 .Python
 build/
