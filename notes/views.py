@@ -1,11 +1,32 @@
-from django.shortcuts import render
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import HttpResponse
 from .models import Note
 
-# --- Authentication Views ---
+@login_required
+def note_edit_view(request, pk):
+    note = get_object_or_404(Note, pk=pk, createdBy=request.user)
+    if request.method == 'POST':
+        note.title = request.POST.get('title')
+        note.description = request.POST.get('description')
+        note.save()
+        messages.success(request, "Note updated successfully!")
+        return redirect('notes:note_list')
+    return render(request, 'notes/note_form.html', {'note': note})
+
+@login_required
+def note_delete_view(request, pk):
+    note = get_object_or_404(Note, pk=pk, createdBy=request.user)
+    if request.method in ['POST', 'DELETE']:
+        note.delete()
+        messages.info(request, "Note deleted.")
+        if request.headers.get('HX-Request'):
+            return HttpResponse('')  # HTMX removes the element
+        return redirect('notes:note_list')
+    return render(request, 'notes/note_confirm_delete.html', {'note': note})
 
 def signup_view(request):
     if request.method == 'POST':
@@ -13,7 +34,8 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('note_list') # Redirect to the notes list after signup
+            messages.success(request, "Account created! Welcome.")
+            return redirect('notes:note_list')
     else:
         form = UserCreationForm()
     return render(request, 'notes/signup.html', {'form': form})
@@ -24,23 +46,19 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect('note_list') # Redirect to the notes list after login
+            messages.success(request, "Logged in successfully.")
+            return redirect('notes:note_list')
     else:
         form = AuthenticationForm()
     return render(request, 'notes/login.html', {'form': form})
 
 def logout_view(request):
-    if request.method == 'POST':
-        logout(request)
-        return redirect('login') # Redirect to login page after logout
-    
-# Add these functions to the bottom of notes/views.py
-
-# --- Note Views ---
+    logout(request)
+    messages.info(request, "Logged out.")
+    return redirect('notes:login')
 
 @login_required
 def note_list_view(request):
-    # Get only the notes created by the currently logged-in user
     notes = Note.objects.filter(createdBy=request.user).order_by('-updatedAt')
     return render(request, 'notes/note_list.html', {'notes': notes})
 
@@ -49,7 +67,7 @@ def note_create_view(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
-        # Create a new note and associate it with the logged-in user
         Note.objects.create(title=title, description=description, createdBy=request.user)
-        return redirect('note_list')
-    return render(request, 'notes/note_form.html')   
+        messages.success(request, "Note created successfully!")
+        return redirect('notes:note_list')
+    return render(request, 'notes/note_form.html')

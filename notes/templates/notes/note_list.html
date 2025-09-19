@@ -1,30 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Notes</title>
-</head>
-<body>
-    <h1>My Notes</h1>
-    <p>Welcome, {{ user.username }}!</p>
+{% extends 'notes/base.html' %}
+{% block title %}My Notes{% endblock %}
 
-    <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button type="submit">Log Out</button>
-    </form>
-
-    <a href="{% url 'note_create' %}">Create a New Note</a>
-
-    <hr>
-
-    {% for note in notes %}
-        <div>
-            <h2>{{ note.title }}</h2>
-            <p>{{ note.description }}</p>
-            <small>Last updated: {{ note.updatedAt }}</small>
-        </div>
-        <hr>
-    {% empty %}
-        <p>You haven't created any notes yet.</p>
-    {% endfor %}
-</body>
-</html>
+{% block content %}
+<h1>My Notes</h1>
+<a href="{% url 'notes:note_create' %}" class="btn btn-primary">Create a New Note</a>
+<hr>
+{% for note in notes %}
+<div id="note-{{ note.pk }}" class="note-card">
+    <h2>{{ note.title }}</h2>
+    <p>{{ note.description }}</p>
+    <small class="timestamp">Last updated: {{ note.updatedAt }}</small>
+    <div>
+        <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-primary">Edit</a>
+        <button
+            class="btn btn-secondary"
+            hx-delete="{% url 'notes:note_delete' note.pk %}"
+            hx-target="#note-{{ note.pk }}"
+            hx-swap="outerHTML"
+            hx-confirm="Are you sure?">
+            Delete
+        </button>
+    </div>
+</div>
+{% empty %}
+<p>You haven't created any notes yet.</p>
+{% endfor %}
+{% endblock %}
