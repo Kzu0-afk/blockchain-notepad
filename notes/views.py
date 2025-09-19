@@ -14,7 +14,7 @@ def landing_view(request):
 
 @login_required
 def note_edit_view(request, pk):
-    note = get_object_or_404(Note, pk=pk, createdBy=request.user)
+    note = get_object_or_404(Note, pk=pk, createdBy=request.user, is_deleted=False)
     if request.method == 'POST':
         note.title = request.POST.get('title')
         note.description = request.POST.get('description')
@@ -25,9 +25,10 @@ def note_edit_view(request, pk):
 
 @login_required
 def note_delete_view(request, pk):
-    note = get_object_or_404(Note, pk=pk, createdBy=request.user)
+    note = get_object_or_404(Note, pk=pk, createdBy=request.user, is_deleted=False)
     if request.method in ['POST', 'DELETE']:
-        note.delete()
+        note.is_deleted = True
+        note.save()
         messages.info(request, "Note deleted.")
         if request.headers.get('HX-Request'):
             return HttpResponse('')  # HTMX removes the element
@@ -65,7 +66,7 @@ def logout_view(request):
 
 @login_required
 def note_list_view(request):
-    notes = Note.objects.filter(createdBy=request.user).order_by('-updatedAt')
+    notes = Note.objects.filter(createdBy=request.user, is_deleted=False).order_by('-updatedAt')
     return render(request, 'notes/note_list.html', {'notes': notes})
 
 @login_required

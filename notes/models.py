@@ -20,6 +20,10 @@ class Note(models.Model):
     # If a User is deleted, all their notes are also deleted (CASCADE).
     createdBy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notes")
 
+    #soft delete field - notes will be marked as deleted instead of being removed from the database
+    is_deleted = models.BooleanField(default=False)
+
+
     def __str__(self):
         # This helps identify notes in the admin panel
         return f"{self.title} by {self.createdBy.username}"

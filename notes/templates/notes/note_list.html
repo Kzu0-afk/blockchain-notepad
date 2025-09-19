@@ -17,7 +17,8 @@
             hx-delete="{% url 'notes:note_delete' note.pk %}"
             hx-target="#note-{{ note.pk }}"
             hx-swap="outerHTML"
-            hx-confirm="Are you sure?">
+            hx-confirm="Are you sure?"
+            hx-headers='{"X-CSRFToken": "{{csrf_token}}"}'>
             Delete
         </button>
     </div>
