@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Notes{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">My Notes</div>
+        <div class="navbar-menu">
+            {% if user.is_authenticated %}
+                <span>Welcome, {{ user.username }}!</span>
+                <form method="post" action="{% url 'notes:logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary">Log Out</button>
+                </form>
+            {% else %}
+                <a href="{% url 'notes:login' %}" class="btn btn-secondary">Log In</a>
+                <a href="{% url 'notes:signup' %}" class="btn btn-primary">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="alert {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 My Notes App. All rights reserved.</p>
+    </footer>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</body>
+</html>
