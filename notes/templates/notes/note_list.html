@@ -2,28 +2,266 @@
 {% block title %}My Notes{% endblock %}
 
 {% block content %}
-<h1>My Notes</h1>
-<a href="{% url 'notes:note_create' %}" class="btn btn-primary">Create a New Note</a>
-<hr>
-{% for note in notes %}
-<div id="note-{{ note.pk }}" class="note-card">
-    <h2>{{ note.title }}</h2>
-    <p>{{ note.description }}</p>
-    <small class="timestamp">Last updated: {{ note.updatedAt }}</small>
-    <div>
-        <a href="{% url 'notes:note_edit' note.pk %}" class="btn btn-primary">Edit</a>
-        <button
-            class="btn btn-secondary"
-            hx-delete="{% url 'notes:note_delete' note.pk %}"
-            hx-target="#note-{{ note.pk }}"
-            hx-swap="outerHTML"
-            hx-confirm="Are you sure?"
-            hx-headers='{"X-CSRFToken": "{{csrf_token}}"}'>
-            Delete
-        </button>
+<style>
+.modern-notes-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradientWave 8s ease infinite;
+    height: 100vh;
+    padding: 1rem;
+    margin: -2rem -1rem 0 -1rem;
+    position: relative;
+    overflow: hidden;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+}
+
+/* Hide scrollbar for webkit browsers */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for Firefox */
+html {
+    scrollbar-width: none;
+}
+
+/* Ensure body doesn't have scrollbars */
+body {
+    overflow: hidden;
+}
+
+/* Prevent any scrolling on the page */
+html {
+    overflow: hidden;
+}
+
+.modern-notes-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.15) 0%, transparent 60%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 70%),
+        radial-gradient(circle at 10% 10%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 90% 90%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    animation: float 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes gradientWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.modern-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+    z-index: 2;
+}
+
+.modern-header h1 {
+    color: white !important;
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
+}
+
+.create-btn {
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    border: none;
+    border-radius: 50px;
+    padding: 1rem 2rem;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.create-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    position: relative;
+    z-index: 2;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+.modern-note-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-note-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+    border-radius: 20px 20px 0 0;
+}
+
+.modern-note-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.modern-note-card h2 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.modern-note-card p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+}
+
+.timestamp {
+    color: #999;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 1.5rem;
+}
+
+.note-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.modern-btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-edit {
+    background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+    color: white;
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-delete {
+    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+.empty-state {
+    text-align: center;
+    color: white;
+    font-size: 1.2rem;
+    margin-top: 3rem;
+    position: relative;
+    z-index: 2;
+}
+
+.empty-state p {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+</style>
+
+<div class="modern-notes-container">
+    <div class="modern-header">
+        <h1>📝 My Notes</h1>
+        <a href="{% url 'notes:note_create' %}" class="create-btn">✨ Create New Note</a>
+    </div>
+    
+    <div class="notes-grid">
+        {% for note in notes %}
+        <div id="note-{{ note.pk }}" class="modern-note-card">
+            <h2>{{ note.title }}</h2>
+            <p>{{ note.description }}</p>
+            <small class="timestamp">Last updated: {{ note.updatedAt }}</small>
+            <div class="note-actions">
+                <a href="{% url 'notes:note_edit' note.pk %}" class="modern-btn btn-edit">✏️ Edit</a>
+                <button
+                    class="modern-btn btn-delete"
+                    hx-delete="{% url 'notes:note_delete' note.pk %}"
+                    hx-target="#note-{{ note.pk }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure?">
+                    🗑️ Delete
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <p>🌟 You haven't created any notes yet. Start your journey by creating your first note!</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
-{% empty %}
-<p>You haven't created any notes yet.</p>
-{% endfor %}
 {% endblock %}
