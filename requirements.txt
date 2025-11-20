@@ -1,0 +1,5 @@
+Django>=5.2.6
+blockfrost-python>=0.6.0
+pycardano>=0.10.0
+python-decouple>=3.8
+
