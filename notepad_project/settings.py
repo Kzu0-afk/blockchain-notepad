@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -130,3 +131,7 @@ STATIC_URL = 'static/'
 # STATICFILES_DIRS = [
 #     BASE_DIR / "notes" / "static",
 # ]
+
+# Blockfrost API Configuration
+BLOCKFROST_PROJECT_ID = config('BLOCKFROST_PROJECT_ID', default='')
+BLOCKFROST_NETWORK = 'cardano-preview'

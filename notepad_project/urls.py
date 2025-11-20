@@ -23,4 +23,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # path('', include('notes.urls')), 
     path('', include('notes.urls', namespace='notes')),
+    # API endpoints for wallet transactions
+    path('api/', include('notes.api_urls')),
 ]
