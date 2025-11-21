@@ -14,6 +14,68 @@ from pycardano import (
     Address,
     BlockFrostChainContext,
 )
+from .models import Profile, Transaction
+from .exceptions import (
+    BlockfrostAPIError,
+    TransactionSubmitError,
+)
+import logging
+
+# Configure structured logging
+logger = logging.getLogger('blockchain')
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_wallet(request):
+    """
+    Save the user's wallet address to their profile.
+    
+    Expected JSON payload:
+    {
+        "wallet_address": "addr_test..."
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "wallet_address": "addr_test..."
+    }
+    """
+    try:
+        # Parse request data
+        data = json.loads(request.body)
+        wallet_address = data.get('wallet_address')
+        
+        # Validate input
+        if not wallet_address:
+            return JsonResponse({'error': 'wallet_address is required'}, status=400)
+        
+        # Validate address format (basic check - Cardano addresses are typically 103 chars max)
+        if len(wallet_address) > 103:
+            return JsonResponse({'error': 'Invalid wallet address format'}, status=400)
+        
+        # Get or create user profile
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        
+        # Check if address is already in use by another user
+        existing_profile = Profile.objects.filter(wallet_address=wallet_address).exclude(user=request.user).first()
+        if existing_profile:
+            return JsonResponse({'error': 'This wallet address is already connected to another account'}, status=400)
+        
+        # Save wallet address
+        profile.wallet_address = wallet_address
+        profile.save()
+        
+        return JsonResponse({
+            'success': True,
+            'wallet_address': profile.wallet_address
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 
 @login_required
@@ -143,26 +205,223 @@ def submit_transaction(request):
         
         # Initialize Blockfrost API
         api = BlockFrostApi(project_id=blockfrost_project_id)
-        
+
         # Submit transaction to Blockfrost
+        transaction_record = None
         try:
             # Blockfrost expects the transaction in hex format
             # The signed_tx_cbor should already be in hex format from the frontend
             tx_hash = api.submit_transaction(signed_tx_cbor)
+
+            # Create Transaction record for tracking
+            # Note: recipient_address and amount_lovelace will be extracted from CBOR if needed
+            # For now, we'll create a basic record and update it later if needed
+            transaction_record = Transaction.objects.create(
+                user=request.user,
+                tx_hash=tx_hash,
+                signed_tx_cbor=signed_tx_cbor,
+                status='submitted',
+                recipient_address='',  # Will be populated from transaction parsing if needed
+                amount_lovelace=0,  # Will be populated from transaction parsing if needed
+            )
+
         except ApiError as e:
-            return JsonResponse({
-                'error': f'Blockfrost API error: {str(e)}',
-                'details': getattr(e, 'body', 'No additional details')
-            }, status=400)
+            # Create failed transaction record for audit trail
+            error_details = getattr(e, 'body', 'No additional details')
+            status_code = getattr(e, 'status_code', None)
+            logger.error(f"Blockfrost API error: user={request.user.username}, status={status_code}, error={str(e)}")
+
+            Transaction.objects.create(
+                user=request.user,
+                signed_tx_cbor=signed_tx_cbor,
+                status='failed',
+                error_message=str(e),
+                error_code=status_code,
+                recipient_address='',
+                amount_lovelace=0,
+            )
+            raise BlockfrostAPIError(
+                f'Blockfrost API error: {str(e)}',
+                status_code=status_code,
+                api_response=error_details
+            )
         except Exception as e:
-            return JsonResponse({'error': f'Failed to submit transaction: {str(e)}'}, status=500)
-        
+            # Create failed transaction record for audit trail
+            logger.error(f"Transaction submission failed: user={request.user.username}, error={str(e)}", exc_info=True)
+            Transaction.objects.create(
+                user=request.user,
+                signed_tx_cbor=signed_tx_cbor,
+                status='failed',
+                error_message=str(e),
+                recipient_address='',
+                amount_lovelace=0,
+            )
+            raise TransactionSubmitError(f'Failed to submit transaction: {str(e)}')
+
         return JsonResponse({
-            'tx_hash': tx_hash
+            'tx_hash': tx_hash,
+            'transaction_id': transaction_record.id if transaction_record else None
         })
-        
+
+    except BlockfrostAPIError as e:
+        return JsonResponse({
+            'error': e.message,
+            'error_code': e.error_code,
+            'details': e.details
+        }, status=400)
+    except TransactionSubmitError as e:
+        return JsonResponse({
+            'error': e.message,
+            'error_code': e.error_code,
+            'details': e.details
+        }, status=500)
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
     except Exception as e:
+        logger.error(f"Unexpected error in submit_transaction: {str(e)}", exc_info=True)
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
+
+@login_required
+@require_http_methods(["GET"])
+def transaction_history(request):
+    """
+    Retrieve a list of the user's blockchain transactions.
+    Supports pagination and filtering by status.
+
+    Query Parameters:
+    - status: Filter by transaction status (pending, submitted, confirmed, failed)
+    - page: Page number for pagination
+    - page_size: Number of items per page (default: 10)
+    - limit: Quick limit without full pagination
+    """
+    user_transactions = Transaction.objects.filter(user=request.user)
+
+    # Filtering
+    status_filter = request.GET.get('status')
+    if status_filter and status_filter in [s[0] for s in Transaction.STATUS_CHOICES]:
+        user_transactions = user_transactions.filter(status=status_filter)
+
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', 10)
+    limit = request.GET.get('limit')  # For quick queries without full pagination
+
+    if limit:
+        try:
+            limit = int(limit)
+            user_transactions = user_transactions[:limit]
+        except ValueError:
+            return JsonResponse({'error': 'Invalid limit parameter'}, status=400)
+    else:
+        from django.core.paginator import Paginator
+        paginator = Paginator(user_transactions, page_size)
+        try:
+            page_obj = paginator.page(page_number)
+        except Exception:
+            page_obj = paginator.page(1)
+        user_transactions = page_obj.object_list
+
+    # Serialize transactions
+    transactions_data = []
+    for tx in user_transactions:
+        transactions_data.append({
+            'id': tx.id,
+            'tx_hash': tx.tx_hash,
+            'recipient_address': tx.recipient_address,
+            'amount_lovelace': tx.amount_lovelace,
+            'amount_ada': tx.amount_lovelace / 1_000_000 if tx.amount_lovelace else 0,
+            'status': tx.get_status_display(),
+            'created_at': tx.created_at.isoformat(),
+            'confirmed_at': tx.confirmed_at.isoformat() if tx.confirmed_at else None,
+            'error_message': tx.error_message,
+            'cardanoscan_link': f"https://preview.cardanoscan.io/transaction/{tx.tx_hash}" if tx.tx_hash else None
+        })
+
+    response_data = {
+        'count': user_transactions.count(),
+        'results': transactions_data
+    }
+
+    if not limit:
+        response_data.update({
+            'next': None,  # Simplified pagination
+            'previous': None,
+        })
+
+    return JsonResponse(response_data)
+
+
+@login_required
+@require_http_methods(["GET"])
+def wallet_dashboard(request):
+    """
+    Get comprehensive wallet dashboard data including balance and transaction statistics.
+    """
+    try:
+        # Get wallet balance from Blockfrost
+        ada_balance = 0
+        balance_lovelace = 0
+
+        if hasattr(request.user, 'profile') and request.user.profile.wallet_address:
+            wallet_address = request.user.profile.wallet_address
+
+            # Get Blockfrost API key from settings
+            blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
+            if blockfrost_project_id:
+                api = BlockFrostApi(project_id=blockfrost_project_id)
+                try:
+                    utxos = api.address_utxos(wallet_address)
+                    balance_lovelace = sum(int(utxo['amount'][0]['quantity']) for utxo in utxos if utxo['amount'])
+                    ada_balance = balance_lovelace / 1_000_000
+                except Exception as e:
+                    logger.warning(f'Could not fetch balance for {wallet_address}: {str(e)}')
+
+        # Get transaction statistics
+        transactions = Transaction.objects.filter(user=request.user)
+        total_transactions = transactions.count()
+        pending_count = transactions.filter(status='pending').count()
+        confirmed_count = transactions.filter(status='confirmed').count()
+        failed_count = transactions.filter(status='failed').count()
+
+        # Calculate total amounts
+        confirmed_transactions = transactions.filter(status='confirmed')
+        total_sent_lovelace = sum(tx.amount_lovelace for tx in confirmed_transactions if tx.amount_lovelace)
+        total_sent_ada = total_sent_lovelace / 1_000_000
+
+        # Get recent transactions (last 5)
+        recent_transactions = []
+        for tx in transactions.order_by('-created_at')[:5]:
+            recent_transactions.append({
+                'id': tx.id,
+                'tx_hash': tx.tx_hash,
+                'status': tx.get_status_display(),
+                'amount_lovelace': tx.amount_lovelace,
+                'amount_ada': tx.amount_lovelace / 1_000_000 if tx.amount_lovelace else 0,
+                'created_at': tx.created_at.isoformat(),
+                'cardanoscan_link': f"https://preview.cardanoscan.io/transaction/{tx.tx_hash}" if tx.tx_hash else None
+            })
+
+        dashboard_data = {
+            'wallet_address': getattr(request.user.profile, 'wallet_address', None) if hasattr(request.user, 'profile') else None,
+            'balance': {
+                'ada': ada_balance,
+                'lovelace': balance_lovelace
+            },
+            'statistics': {
+                'total_transactions': total_transactions,
+                'pending_transactions': pending_count,
+                'confirmed_transactions': confirmed_count,
+                'failed_transactions': failed_count,
+                'total_sent_ada': total_sent_ada,
+                'total_sent_lovelace': total_sent_lovelace
+            },
+            'recent_transactions': recent_transactions
+        }
+
+        return JsonResponse(dashboard_data)
+
+    except Exception as e:
+        logger.error(f"Dashboard error for user {request.user.username}: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'Failed to load dashboard: {str(e)}'}, status=500)
+
 
