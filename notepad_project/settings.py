@@ -137,6 +137,27 @@ STATIC_URL = 'static/'
 BLOCKFROST_PROJECT_ID = config('BLOCKFROST_PROJECT_ID', default='')
 BLOCKFROST_NETWORK = 'cardano-preview'
 
+# Caching Configuration (using Django's built-in cache)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'blockchain-cache',
+    },
+    'blockfrost': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'blockfrost-api-cache',
+    }
+}
+
+# Cache timeout settings (in seconds)
+BLOCKFROST_CACHE_TIMEOUT = 300  # 5 minutes for general data
+BLOCKFROST_BALANCE_CACHE_TIMEOUT = 60  # 1 minute for balance data (more volatile)
+BLOCKFROST_TX_CACHE_TIMEOUT = 600  # 10 minutes for transaction data
+
+# Background task configuration using Django management commands
+# Run: python manage.py update_transaction_status
+# Can be scheduled with cron: */5 * * * * /path/to/python manage.py update_transaction_status
+
 # Django REST Framework Configuration (for API documentation)
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',

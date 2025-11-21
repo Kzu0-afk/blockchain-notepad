@@ -93,8 +93,20 @@ class Transaction(models.Model):
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['user', '-created_at']),
-            models.Index(fields=['status', 'created_at']),
+            # User-specific queries (most common)
+            models.Index(fields=['user', '-created_at'], name='tx_user_created_idx'),
+            models.Index(fields=['user', 'status'], name='tx_user_status_idx'),
+
+            # Status-based queries for background updates
+            models.Index(fields=['status', 'created_at'], name='tx_status_created_idx'),
+            models.Index(fields=['status', 'updated_at'], name='tx_status_updated_idx'),
+
+            # Transaction hash lookups
+            models.Index(fields=['tx_hash'], name='tx_hash_idx'),
+
+            # Composite indexes for complex queries
+            models.Index(fields=['user', 'status', '-created_at'], name='tx_user_status_created_idx'),
+            models.Index(fields=['created_at', 'status'], name='tx_created_status_idx'),
         ]
     
     def __str__(self):
