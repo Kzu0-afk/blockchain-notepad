@@ -1,0 +1,448 @@
+{% extends 'notes/base.html' %}
+{% block title %}Wallet Profile{% endblock %}
+
+{% block content %}
+<style>
+.profile-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradientWave 8s ease infinite;
+    min-height: 100vh;
+    padding: 2rem;
+    margin: -2rem -1rem 0 -1rem;
+    position: relative;
+    overflow: hidden;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+}
+
+.profile-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.15) 0%, transparent 60%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes gradientWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.profile-content {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.profile-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-section h2 {
+    color: #2c3e50;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.profile-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+    border-radius: 20px 20px 0 0;
+}
+
+.wallet-connection {
+    text-align: center;
+}
+
+#connect-wallet-btn {
+    background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+    border: none;
+    border-radius: 50px;
+    padding: 1rem 2.5rem;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+}
+
+#connect-wallet-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(78, 205, 196, 0.4);
+}
+
+#connect-wallet-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#wallet-address-display {
+    background: rgba(78, 205, 196, 0.1);
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    color: #2c3e50;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 1rem;
+    word-break: break-all;
+}
+
+.transaction-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.form-group input {
+    padding: 1rem;
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+}
+
+#transaction-form button[type="submit"] {
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    border: none;
+    border-radius: 50px;
+    padding: 1rem 2.5rem;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 1rem;
+}
+
+#transaction-form button[type="submit"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+}
+
+#transaction-form button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#tx-hash-display {
+    background: rgba(78, 205, 196, 0.1);
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+#tx-hash-display a {
+    color: #4ecdc4;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 1.1rem;
+    word-break: break-all;
+}
+
+#tx-hash-display a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    background: rgba(255, 107, 107, 0.1);
+    border: 2px solid rgba(255, 107, 107, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    color: #d63031;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
+.success-message {
+    background: rgba(78, 205, 196, 0.1);
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    color: #00b894;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+</style>
+
+<div class="profile-container">
+    <div class="profile-content">
+        <!-- Phase 2: Wallet Connection Section -->
+        <div class="profile-section wallet-connection">
+            <h2>🔗 Connect Your Wallet</h2>
+            <button id="connect-wallet-btn">Connect Wallet</button>
+            <div id="wallet-address-display">Status: Not Connected</div>
+        </div>
+
+        <!-- Phase 3: Transaction Form Section -->
+        <div class="profile-section">
+            <h2>💸 Send ADA</h2>
+            <form id="transaction-form" class="transaction-form">
+                <div class="form-group">
+                    <label for="recipient-address-input">Recipient Address</label>
+                    <input 
+                        type="text" 
+                        id="recipient-address-input" 
+                        name="recipient_address" 
+                        placeholder="Enter recipient Cardano address (addr_test...)" 
+                        required
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="amount-input">Amount (Lovelace)</label>
+                    <input 
+                        type="number" 
+                        id="amount-input" 
+                        name="amount" 
+                        placeholder="Enter amount in Lovelace (1 ADA = 1,000,000 Lovelace)" 
+                        min="1000000"
+                        step="1000000"
+                        required
+                    />
+                </div>
+                <button type="submit">Build & Sign Transaction</button>
+            </form>
+            <div id="tx-hash-display" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Phase 2: Wallet Connection Script
+document.addEventListener('DOMContentLoaded', function() {
+    const connectWalletBtn = document.getElementById('connect-wallet-btn');
+    const walletAddressDisplay = document.getElementById('wallet-address-display');
+    
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', async function() {
+            try {
+                // Check if Lace wallet is available
+                if (!window.cardano || !window.cardano.lace) {
+                    walletAddressDisplay.textContent = 'Error: Lace wallet not found. Please install Lace wallet extension.';
+                    walletAddressDisplay.className = 'error-message';
+                    return;
+                }
+                
+                // Disable button during connection
+                connectWalletBtn.disabled = true;
+                connectWalletBtn.textContent = 'Connecting...';
+                
+                // Enable wallet connection
+                const api = await window.cardano.lace.enable();
+                
+                // Get user's wallet address
+                const address = await api.getChangeAddress();
+                
+                // Send address to backend
+                const response = await fetch('/api/save-wallet/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        wallet_address: address
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    walletAddressDisplay.textContent = `Connected: ${address}`;
+                    walletAddressDisplay.className = 'success-message';
+                    connectWalletBtn.textContent = 'Wallet Connected ✓';
+                    connectWalletBtn.style.background = 'linear-gradient(45deg, #00b894, #00cec9)';
+                } else {
+                    walletAddressDisplay.textContent = `Error: ${data.error || 'Failed to save wallet address'}`;
+                    walletAddressDisplay.className = 'error-message';
+                    connectWalletBtn.disabled = false;
+                    connectWalletBtn.textContent = 'Connect Wallet';
+                }
+            } catch (error) {
+                walletAddressDisplay.textContent = `Error: ${error.message || 'Failed to connect wallet'}`;
+                walletAddressDisplay.className = 'error-message';
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Connect Wallet';
+            }
+        });
+    }
+    
+    // Phase 3: Transaction Form Script
+    const transactionForm = document.getElementById('transaction-form');
+    const txHashDisplay = document.getElementById('tx-hash-display');
+    
+    if (transactionForm) {
+        transactionForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const recipientAddress = document.getElementById('recipient-address-input').value;
+            const amount = document.getElementById('amount-input').value;
+            const submitBtn = transactionForm.querySelector('button[type="submit"]');
+            
+            try {
+                // Check if wallet is connected
+                if (!window.cardano || !window.cardano.lace) {
+                    showError('Lace wallet not found. Please install Lace wallet extension.');
+                    return;
+                }
+                
+                // Disable form during processing
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Building Transaction...';
+                
+                // Step 1: Build transaction (get unsigned TX from backend)
+                const buildResponse = await fetch('/api/build-transaction/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        recipient_address: recipientAddress,
+                        amount_lovelace: parseInt(amount)
+                    })
+                });
+                
+                const buildData = await buildResponse.json();
+                
+                if (!buildResponse.ok) {
+                    throw new Error(buildData.error || 'Failed to build transaction');
+                }
+                
+                submitBtn.textContent = 'Signing Transaction...';
+                
+                // Step 2: Sign transaction with wallet
+                const api = await window.cardano.lace.enable();
+                const unsignedTxCbor = buildData.unsigned_tx_cbor;
+                
+                const signedTxCbor = await api.signTx(unsignedTxCbor, true);
+                
+                submitBtn.textContent = 'Submitting Transaction...';
+                
+                // Step 3: Submit signed transaction to backend
+                const submitResponse = await fetch('/api/submit-transaction/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        signed_tx_cbor: signedTxCbor
+                    })
+                });
+                
+                const submitData = await submitResponse.json();
+                
+                if (!submitResponse.ok) {
+                    throw new Error(submitData.error || 'Failed to submit transaction');
+                }
+                
+                // Step 4: Display transaction hash with link to Cardano Scan
+                const txHash = submitData.tx_hash;
+                txHashDisplay.style.display = 'block';
+                txHashDisplay.innerHTML = `
+                    <strong>Transaction Submitted Successfully!</strong><br>
+                    <a href="https://preview.cardanoscan.io/transaction/${txHash}" target="_blank">
+                        View on Cardano Scan: ${txHash}
+                    </a>
+                `;
+                txHashDisplay.className = 'success-message';
+                
+                // Reset form
+                transactionForm.reset();
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Build & Sign Transaction';
+                
+            } catch (error) {
+                showError(error.message || 'Transaction failed');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Build & Sign Transaction';
+            }
+        });
+    }
+    
+    function showError(message) {
+        txHashDisplay.style.display = 'block';
+        txHashDisplay.textContent = `Error: ${message}`;
+        txHashDisplay.className = 'error-message';
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+

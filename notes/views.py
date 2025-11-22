@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
-from .models import Note
+from .models import Note, Profile
 
 def landing_view(request):
     """Landing page for non-authenticated users"""
@@ -78,3 +78,9 @@ def note_create_view(request):
         messages.success(request, "Note created successfully!")
         return redirect('notes:note_list')
     return render(request, 'notes/note_form.html')
+
+@login_required
+def profile_view(request):
+    """User profile page with wallet connection and transaction form"""
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    return render(request, 'notes/profile.html', {'profile': profile})
