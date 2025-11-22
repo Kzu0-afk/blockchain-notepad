@@ -203,11 +203,13 @@ Provide your Blockfrost Project ID to MJ for the central .env file.
 II. Phase 2: Wallet Connection Functionality
 Description: To implement the initial user feature: connecting their Lace wallet to their account in our application and saving their wallet address to the database.
 
-1. Luis Miguel A. Jaca (UI/UX):
+1. Luis Miguel A. Jaca (UI/UX): ✅ **COMPLETE**
 Git Branch: feature/ui/wallet-connection
 Task: Create the necessary frontend user interface elements.
 In the user profile template, add a <button> with the ID connect-wallet-btn and text "Connect Wallet".
 Add a <div> with the ID wallet-address-display to show the user's connected address. It should initially display "Status: Not Connected".
+
+**Status Update**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2. The profile template (`notes/templates/notes/profile.html`) has been created with the connect wallet button and wallet address display div. A profile view and URL route have been added. See `MIGS_IMPLEMENTATION_DOCS.md` for complete implementation details.
 
 2. Vincent B. Pacaña (Backend API Scaffolding):
 Git Branch: feature/api/save-wallet-endpoint
@@ -228,7 +230,7 @@ On a successful response from the backend, update the text of the #wallet-addres
 III. Phase 3: Transaction Handling Functionality
 Description: The core implementation phase. To build the end-to-end flow for a user to construct, sign, and submit a transaction to the Cardano Preview Testnet.
 
-1. Luis Miguel A. Jaca (UI/UX):
+1. Luis Miguel A. Jaca (UI/UX): ✅ **COMPLETE**
 Git Branch: feature/ui/transaction-form
 Task: Create the user interface for sending ADA.
 Create an HTML <form> with the ID transaction-form.
@@ -236,6 +238,8 @@ Inside the form, add an <input> for "Recipient Address" (ID: recipient-address-i
 Add another <input type="number"> for "Amount (Lovelace)" (ID: amount-input).
 Add a <button type="submit"> with the text "Build & Sign Transaction".
 Create a <div> with the ID tx-hash-display to show the final transaction hash and a link to Cardano Scan.
+
+**Status Update**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 3. The transaction form with all required elements (form, recipient input, amount input, submit button, and tx-hash-display div) has been implemented in the profile template. The form includes proper styling and is ready for JavaScript integration. See `MIGS_IMPLEMENTATION_DOCS.md` for complete implementation details.
 
 2. Vincent B. Pacaña (Backend API Scaffolding):
 Git Branch: feature/api/transaction-endpoints
@@ -277,7 +281,17 @@ End-to-End Testing: Perform a full user workflow: Register -> Login -> Connect W
 Verification: Use Cardano Scan (Preview) to confirm the test transaction is visible and successful on the blockchain.
 Debugging: If necessary, use the CBOR Playground to analyze any problematic transaction data and statuses.
 
-Backend Implementation Status: Vincent B. Pacaña has completed all backend API endpoints and transaction processing logic. The backend is ready for frontend integration and testing.
+**Implementation Status Summary:**
+
+✅ **Backend Implementation**: Vincent B. Pacaña has completed all backend API endpoints and transaction processing logic. The backend is ready for frontend integration and testing. See `VINCE_IMPLEMENTATION_DOCS.md` for details.
+
+✅ **Frontend UI/UX Implementation**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2 and Phase 3. All required HTML elements, styling, and basic JavaScript structure are in place. The profile page is ready for JavaScript integration. See `MIGS_IMPLEMENTATION_DOCS.md` for details.
+
+⏳ **Frontend JavaScript Implementation**: Rainric Randy P. Yu needs to implement the JavaScript functionality for:
+- Phase 2: Wallet connection script (event listener, wallet API calls, fetch to backend)
+- Phase 3: Transaction form script (build, sign, submit, display transaction hash)
+
+**Note for Rainric**: The UI elements are already in place with the correct IDs. You can focus on implementing the JavaScript logic to connect the UI to the backend API endpoints. The profile template is located at `notes/templates/notes/profile.html` and already contains a basic JavaScript structure that you can enhance or replace with your implementation.
 
 ---
 
@@ -333,6 +347,6 @@ Features:
 Enhancement Implementation Status: Vincent B. Pacaña has completed all 16 enhancement tasks, achieving a perfect 100/100 rubric score. The backend now features enterprise-grade architecture with comprehensive transaction management, professional documentation, advanced error handling, performance optimizations, and automated background processing. These features are implemented and available for future use, but frontend development should focus on the original Phase 2 & 3 requirements only.
 
 **Frontend Development Guidelines:**
-- **Luis Miguel A. Jaca (UI/UX)**: Implement only the UI elements specified in Phase 2 and Phase 3. Do not add dashboard components, transaction history tables, or analytics interfaces.
-- **Rainric Randy P. Yu (Frontend Logic)**: Implement only the JavaScript functionality for wallet connection and basic transaction flow as specified. Do not add dashboard data fetching, transaction history pagination, or enhanced error handling beyond basic requirements.
-- **Focus**: Complete the assigned Phase 2 & 3 frontend work before considering any enhancement features.
+- **Luis Miguel A. Jaca (UI/UX)**: ✅ **COMPLETE** - All UI elements for Phase 2 and Phase 3 have been implemented. No dashboard components, transaction history tables, or analytics interfaces were added (as per guidelines).
+- **Rainric Randy P. Yu (Frontend Logic)**: ⏳ **IN PROGRESS** - Implement only the JavaScript functionality for wallet connection and basic transaction flow as specified. The UI elements are ready with the correct IDs. Do not add dashboard data fetching, transaction history pagination, or enhanced error handling beyond basic requirements.
+- **Focus**: Complete the assigned Phase 2 & 3 frontend JavaScript work before considering any enhancement features.
