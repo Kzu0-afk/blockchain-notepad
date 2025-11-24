@@ -266,7 +266,7 @@
         </div>
     </div>
 </div>
-
+<!-- 
 <script>
 // Phase 2: Wallet Connection Script
 document.addEventListener('DOMContentLoaded', function() {
@@ -428,6 +428,137 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script> -->
+
+
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+    const connectBtn = document.getElementById('connect-wallet-btn');
+    const addressDisplay = document.getElementById('wallet-address-display');
+    const form = document.getElementById('transaction-form');
+    const txDisplay = document.getElementById('tx-hash-display');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    let walletApi = null;
+    let userAddress = null;
+
+    // Connect to Lace Wallet (2025 compatible)
+    async function connectWallet() {
+        if (!window.cardano) throw new Error("No Cardano wallet extension found");
+
+        const lace = window.cardano.lacewallet || window.cardano.lace || window.cardano["lacewallet"] || window.cardano["lace"];
+        if (!lace?.enable) throw new Error("Lace wallet not detected. Install from https://lace.io");
+
+        walletApi = await lace.enable();
+        const addresses = await walletApi.getUsedAddresses();
+        userAddress = addresses[0] || await walletApi.getChangeAddress();
+
+        // Optional: save to backend
+        await fetch('/api/save-wallet/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ wallet_address: userAddress })
+        });
+
+        return userAddress;
+    }
+
+    connectBtn.addEventListener('click', async () => {
+        connectBtn.disabled = true;
+        connectBtn.textContent = 'Connecting...';
+        try {
+            const addr = await connectWallet();
+            addressDisplay.textContent = `Connected: ${addr.slice(0,12)}...${addr.slice(-8)}`;
+            addressDisplay.className = 'success-message';
+            connectBtn.textContent = 'Connected';
+            connectBtn.style.background = 'linear-gradient(45deg, #00b894, #00cec9)';
+        } catch (err) {
+            addressDisplay.textContent = `Error: ${err.message}`;
+            addressDisplay.className = 'error-message';
+            connectBtn.disabled = false;
+            connectBtn.textContent = 'Connect Lace Wallet';
+        }
+    });
+
+    // Transaction Submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const recipient = document.getElementById('recipient-address-input').value.trim();
+        const lovelaceInput = document.getElementById('amount-input').value;
+        const lovelace = parseInt(lovelaceInput);
+
+        if (!recipient.startsWith('addr_test')) return showError("Invalid testnet address");
+        if (!lovelace || lovelace < 1000000) return showError("Minimum 1 ADA (1,000,000 lovelace)");
+        if (!walletApi || !userAddress) return showError("Connect wallet first");
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Building transaction...';
+
+        try {
+            // 1. Build
+            const buildRes = await fetch('/api/build-transaction/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({
+                    sender_address: userAddress,
+                    recipient_address: recipient,
+                    amount_lovelace: lovelace
+                })
+            });
+            const buildData = await buildRes.json();
+            if (!buildRes.ok) throw new Error(buildData.error || "Build failed");
+
+            submitBtn.textContent = 'Please sign in Lace...';
+            const signedTx = await walletApi.signTx(buildData.unsigned_tx_cbor, true);
+
+            submitBtn.textContent = 'Submitting...';
+            const submitRes = await fetch('/api/submit-transaction/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ signed_tx_cbor: signedTx })
+            });
+            const submitData = await submitRes.json();
+            if (!submitRes.ok) throw new Error(submitData.error || "Submit failed");
+
+            txDisplay.style.display = 'block';
+            txDisplay.className = 'success-message';
+            txDisplay.innerHTML = `
+                <strong>Transaction Sent!</strong><br><br>
+                <a href="https://preview.cardanoscan.io/transaction/${submitData.tx_hash}" target="_blank">
+                    View on CardanoScan: ${submitData.tx_hash}
+                </a>
+            `;
+            form.reset();
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Transaction';
+        }
+    });
+
+    function showError(msg) {
+        txDisplay.style.display = 'block';
+        txDisplay.className = 'error-message';
+        txDisplay.textContent = `Error: ${msg}`;
+    }
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

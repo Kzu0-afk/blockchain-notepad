@@ -177,3 +177,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Dashboard', 'description': 'Wallet dashboard and analytics endpoints'},
     ],
 }
+
+
+BLOCKFROST_PROJECT_ID = config('BLOCKFROST_PROJECT_ID') 
+BLOCKFROST_NETWORK = "preview"  # or "mainnet" when ready

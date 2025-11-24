@@ -235,8 +235,15 @@ html {
 
 <div class="modern-notes-container">
     <div class="modern-header">
-        <h1>📝 My Notes</h1>
-        <a href="{% url 'notes:note_create' %}" class="create-btn">✨ Create New Note</a>
+        <h1>My Notes</h1>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+            <a href="{% url 'notes:note_create' %}" class="create-btn">
+                Create New Note
+            </a>
+            <a href="{% url 'notes:send_ada' %}" class="create-btn" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">
+                Send ADA
+            </a>
+        </div>
     </div>
     
     <div class="notes-grid">
