@@ -465,8 +465,23 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!lace?.enable) throw new Error("Lace wallet not detected. Install from https://lace.io");
 
         walletApi = await lace.enable();
-        const addresses = await walletApi.getUsedAddresses();
-        userAddress = addresses[0] || await walletApi.getChangeAddress();
+
+        // Use reward addresses (more reliable for staking/sending on testnet)
+        const rewardAddresses = await walletApi.getRewardAddresses();
+        if (!rewardAddresses || rewardAddresses.length === 0) {
+            throw new Error("No reward address found. Make sure you have ADA on Preview testnet.");
+        }
+
+        let userAddress = rewardAddresses[0];
+
+        // Ensure it's in Bech32 format (addr_test1p...)
+        if (!userAddress.startsWith('addr_test1p')) {
+            userAddress = await walletApi.toBech32(userAddress);
+        }
+
+        if (!userAddress.startsWith('addr_test1p')) {
+            throw new Error(`Wrong network! Expected addr_test1p..., got ${userAddress.substring(0,20)}...`);
+        }
 
         // Optional: save to backend
         await fetch('/api/save-wallet/', {
@@ -516,7 +531,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
                 body: JSON.stringify({
-                    sender_address: userAddress,
                     recipient_address: recipient,
                     amount_lovelace: lovelace
                 })
