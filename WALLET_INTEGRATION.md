@@ -1,5 +1,40 @@
 Comprehensive Project Plan: Cardano Wallet Integration
 
+## 📊 Implementation Status
+
+**Last Updated:** November 2024
+
+| Phase | Status | Completed By | Notes |
+|-------|--------|--------------|-------|
+| Phase 1: Project Setup & Prerequisites | ✅ **COMPLETED** | MJ (Lead Developer) | Environment configured, dependencies installed |
+| Phase 2: Wallet Connection Functionality | ⏳ **PENDING** | Team Members | Frontend UI and API endpoint needed |
+| Phase 3: Transaction Handling | 🔄 **PARTIALLY COMPLETED** | MJ (Backend Logic ✅) | Backend APIs complete, Frontend components pending |
+| Phase 4: Final Integration & Testing | ⏳ **PENDING** | All Team Members | Waiting for Phase 2 & Phase 3 Frontend completion |
+
+### ✅ Completed Components
+
+**Backend (Phase 1 & Phase 3 - MJ):**
+- ✅ `.env` file configuration for secure API key management
+- ✅ `requirements.txt` with all dependencies (Django, blockfrost-python 0.6.0, pycardano 0.17.0, python-decouple)
+- ✅ `settings.py` updated with Blockfrost API configuration using python-decouple
+- ✅ `Profile` model created in `notes/models.py` with wallet_address field
+- ✅ Django signals implemented for automatic Profile creation
+- ✅ `build_transaction` API endpoint implemented (`/api/build-transaction/`)
+- ✅ `submit_transaction` API endpoint implemented (`/api/submit-transaction/`)
+- ✅ API URL routing configured in `notes/api_urls.py`
+- ✅ Database migrations created and applied
+
+**Files Created/Modified:**
+- `requirements.txt`
+- `notepad_project/settings.py` (lines 14, 136-137)
+- `notes/models.py` (Profile model)
+- `notes/api_views.py` (Transaction APIs)
+- `notes/api_urls.py` (API routing)
+- `notes/admin.py` (Profile registration)
+- `notepad_project/urls.py` (API route inclusion)
+
+---
+
 1. Project Overview & Mission
 The primary goal is to integrate live Cardano blockchain functionality into our existing Django web application. The project will enable authenticated users to connect their personal Cardano wallet (e.g., Lace), and use it to construct, securely sign, and submit a transaction to the Cardano Preview Testnet. This will serve as a practical demonstration of a full-stack Web3 application.
 2. Core Architecture: Secure Client-Server Model
@@ -10,9 +45,11 @@ Backend (Server - Python/Django): This is the "trusted" environment that acts as
 Wallet: Lace Wallet (or any CIP-30 compatible wallet).
 Frontend-Wallet Bridge (JS): The CIP-30 standard, accessed via the window.cardano object.
 Backend-Blockchain Bridge (Python): Blockfrost.io API service.
-Python Libraries:
-blockfrost-python: For easy communication with the Blockfrost API.
-pycardano: For building and manipulating Cardano data structures like transactions.
+Python Libraries (✅ Installed):
+- **Django 5.2.6**: Web framework
+- **blockfrost-python 0.6.0**: For communication with the Blockfrost API
+- **pycardano 0.17.0**: For building and manipulating Cardano data structures like transactions
+- **python-decouple 3.8**: For secure environment variable management
 Verification & Debugging Tools:
 Cardano Scan (Preview): Block explorer to visually confirm successful transactions.
 CBOR Playground: Tool to inspect raw transaction data if debugging is needed.
@@ -186,19 +223,29 @@ export default App
 
 6. Phase-by-Phase Execution Plan
 
-I. Phase 1: Project Setup & Prerequisites
+I. Phase 1: Project Setup & Prerequisites ✅ **COMPLETED**
 Description: To ensure every team member has the necessary tools, accounts, and a foundational understanding of the technologies we will use. This phase must be completed before any coding begins.
-1. MJ (Project Lead):
-Task: Initialize the project's environment for secure API key management.
-Create the .env file in the project's root directory.
-Add the line BLOCKFROST_PROJECT_ID='YOUR_KEY_HERE' to the .env file.
-Verify that the .env file is listed in .gitignore to prevent committing secret keys.
-All Team Members (Vincent, Luis, Rainric):
+
+**1. MJ (Lead Developer) - ✅ COMPLETED:**
+- ✅ Created `.env` file in project root with `BLOCKFROST_PROJECT_ID='YOUR_KEY_HERE'`
+- ✅ Verified `.env` is listed in `.gitignore` to prevent committing secret keys
+- ✅ Created `requirements.txt` with all dependencies:
+  - Django>=5.2.6
+  - blockfrost-python>=0.6.0 (corrected from 1.3.0)
+  - pycardano>=0.10.0
+  - python-decouple>=3.8
+- ✅ Integrated `python-decouple` in `notepad_project/settings.py`:
+  - Import: `from decouple import config`
+  - Configuration: `BLOCKFROST_PROJECT_ID = config('BLOCKFROST_PROJECT_ID', default='')`
+  - Network setting: `BLOCKFROST_NETWORK = 'cardano-preview'`
+- ✅ All dependencies installed and tested
+
+**All Team Members (Vincent, Luis, Rainric) - ⏳ PENDING:**
 Task: Set up individual development environments.
-Install the Lace wallet browser extension.
-Create a personal project on Blockfrost.io and select the Preview Testnet.
-Acquire test ADA from the official Cardano Testnet Faucet to fund your Lace wallet on the Preview network.
-Provide your Blockfrost Project ID to MJ for the central .env file.
+- Install the Lace wallet browser extension.
+- Create a personal project on Blockfrost.io and select the Preview Testnet.
+- Acquire test ADA from the official Cardano Testnet Faucet to fund your Lace wallet on the Preview network.
+- Provide your Blockfrost Project ID to MJ for the central .env file.
 
 II. Phase 2: Wallet Connection Functionality
 Description: To implement the initial user feature: connecting their Lace wallet to their account in our application and saving their wallet address to the database.
@@ -209,12 +256,12 @@ Task: Create the necessary frontend user interface elements.
 In the user profile template, add a <button> with the ID connect-wallet-btn and text "Connect Wallet".
 Add a <div> with the ID wallet-address-display to show the user's connected address. It should initially display "Status: Not Connected".
 
-2. Vincent B. Pacaña (Backend API Scaffolding):
+2. Vincent B. Pacaña (Backend API Scaffolding) - ⏳ PENDING:
 Git Branch: feature/api/save-wallet-endpoint
 Task: Prepare the backend to store wallet data.
-Model: Modify the User/Profile model by adding a new field: wallet_address = models.CharField(max_length=103, unique=True, null=True, blank=True).
-Database: Run the commands python manage.py makemigrations and python manage.py migrate.
-API Endpoint: Create the URL and an empty, login-protected view function for a POST request at /api/save-wallet/.
+- ✅ **Model:** Profile model already created by MJ with wallet_address field (completed in Phase 3)
+- ✅ **Database:** Migration created and applied (`notes/migrations/0003_profile.py`)
+- ⏳ **API Endpoint:** Create the URL and a login-protected view function for a POST request at `/api/save-wallet/` to save wallet address to user's profile.
 
 3. Rainric Randy P. Yu (Frontend Logic):
 Git Branch: feature/js/connect-wallet-script
@@ -237,12 +284,13 @@ Add another <input type="number"> for "Amount (Lovelace)" (ID: amount-input).
 Add a <button type="submit"> with the text "Build & Sign Transaction".
 Create a <div> with the ID tx-hash-display to show the final transaction hash and a link to Cardano Scan.
 
-2. Vincent B. Pacaña (Backend API Scaffolding):
+2. Vincent B. Pacaña (Backend API Scaffolding) - ✅ **COMPLETED BY MJ:**
 Git Branch: feature/api/transaction-endpoints
 Task: Create the backend API endpoint structures for transaction processing.
-URL: Define a path for a POST request at /api/build-transaction/.
-URL: Define a path for a POST request at /api/submit-transaction/.
-Views: Create the corresponding empty, login-protected view functions for both URLs in views.py.
+- ✅ **URL:** Path for POST request at `/api/build-transaction/` (implemented by MJ)
+- ✅ **URL:** Path for POST request at `/api/submit-transaction/` (implemented by MJ)
+- ✅ **Views:** Fully implemented (not empty) with complete transaction logic in `notes/api_views.py`
+- ✅ **URL Configuration:** `notes/api_urls.py` created and integrated
 
 3. Rainric Randy P. Yu (Frontend Logic):
 Git Branch: feature/js/sign-submit-script
@@ -253,27 +301,107 @@ Sign Step: Use the wallet's api.signTx(unsignedTxCbor, true) function to prompt 
 Submit Step: fetch the /api/submit-transaction/ endpoint, sending the signed transaction CBOR from the previous step.
 Display Step: On a successful response, display the final transaction hash in the #tx-hash-display div, formatted as a clickable link to https://preview.cardanoscan.io/transaction/THE_HASH.
 
-4. MJ (Backend Logic):
+4. MJ (Backend Logic) - ✅ **COMPLETED:**
 Git Branch: feature/backend/transaction-logic
 Task: Implement the secure, server-side transaction processing logic.
-Install Libraries: pip install blockfrost-python pycardano.
-Implement build_transaction View:
-Read the BLOCKFROST_PROJECT_ID from settings.
-Use blockfrost-python to get the UTXOs for the logged-in user's wallet_address.
-Use pycardano to construct the transaction body.
-Return the transaction's CBOR representation in the JSON response.
-Implement submit_transaction View:
-Receive the signed transaction CBOR from the request.
-Use blockfrost-python's submit_tx function to send it to the Cardano network.
-Return the transaction hash from the Blockfrost response.
 
-IV. Phase 4: Final Integration & Testing
+**✅ Completed Implementation:**
+
+- ✅ **Libraries Installed:** All dependencies in `requirements.txt` (blockfrost-python 0.6.0, pycardano 0.17.0)
+- ✅ **Profile Model:** Created in `notes/models.py` with wallet_address field (max_length=103, unique, nullable)
+- ✅ **Database Migration:** Created and applied (`notes/migrations/0003_profile.py`)
+
+**✅ build_transaction View (notes/api_views.py, lines 21-104):**
+- ✅ Reads BLOCKFROST_PROJECT_ID from settings
+- ✅ Validates user has connected wallet (checks Profile.wallet_address)
+- ✅ Uses BlockFrostChainContext from pycardano to fetch UTXOs
+- ✅ Uses TransactionBuilder to construct unsigned transaction
+- ✅ Automatically handles UTXO selection, fee calculation, and change outputs
+- ✅ Returns unsigned transaction CBOR (hex-encoded) in JSON response
+- ✅ Protected with `@login_required` decorator
+- ✅ Endpoint: `POST /api/build-transaction/`
+
+**✅ submit_transaction View (notes/api_views.py, lines 109-160):**
+- ✅ Receives signed transaction CBOR from request body
+- ✅ Uses Blockfrost API (`api.submit_transaction()`) to submit to Cardano network
+- ✅ Returns transaction hash in JSON response
+- ✅ Protected with `@login_required` decorator
+- ✅ Endpoint: `POST /api/submit-transaction/`
+
+**✅ URL Configuration:**
+- ✅ Created `notes/api_urls.py` with both endpoints
+- ✅ Integrated into `notepad_project/urls.py` at `/api/` path
+
+**Technical Challenges Solved:**
+- ✅ Fixed pycardano import path (changed from `pycardano.backends.blockfrost` to direct import from `pycardano`)
+- ✅ Corrected blockfrost-python version from 1.3.0 to 0.6.0
+- ✅ Ensured proper virtual environment package installation
+
+IV. Phase 4: Final Integration & Testing ⏳ **PENDING**
 Description: The final phase where all completed components are merged, tested together, and the project is finalized for presentation.
 
-1. MJ (Project Lead):
+**Status:** Waiting for Phase 2 and Phase 3 Frontend components to be completed.
+
+**1. MJ (Lead Developer) - ⏳ PENDING:**
 Task: Oversee the final integration and verification.
-Code Review: Review all pull requests from team members, ensuring code quality and adherence to the plan.
-Merge: Merge all approved feature branches into the main branch.
-End-to-End Testing: Perform a full user workflow: Register -> Login -> Connect Wallet -> Send ADA.
-Verification: Use Cardano Scan (Preview) to confirm the test transaction is visible and successful on the blockchain.
-Debugging: If necessary, use the CBOR Playground to analyze any problematic transaction data and statuses.
+- ⏳ **Code Review:** Review all pull requests from team members, ensuring code quality and adherence to the plan.
+- ⏳ **Merge:** Merge all approved feature branches into the main branch.
+- ⏳ **End-to-End Testing:** Perform a full user workflow: Register -> Login -> Connect Wallet -> Send ADA.
+- ⏳ **Verification:** Use Cardano Scan (Preview) to confirm the test transaction is visible and successful on the blockchain.
+- ⏳ **Debugging:** If necessary, use the CBOR Playground to analyze any problematic transaction data and statuses.
+
+---
+
+## 📝 Implementation Notes
+
+### Backend API Endpoints (✅ Ready for Frontend Integration)
+
+**1. Build Transaction Endpoint:**
+- **URL:** `POST /api/build-transaction/`
+- **Authentication:** Required (login-protected)
+- **Request Body:**
+  ```json
+  {
+    "recipient_address": "addr_test...",
+    "amount_lovelace": 1000000
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "unsigned_tx_cbor": "hex-encoded-cbor-string"
+  }
+  ```
+
+**2. Submit Transaction Endpoint:**
+- **URL:** `POST /api/submit-transaction/`
+- **Authentication:** Required (login-protected)
+- **Request Body:**
+  ```json
+  {
+    "signed_tx_cbor": "hex-encoded-cbor-string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "tx_hash": "transaction-hash"
+  }
+  ```
+
+### Profile Model Structure
+- **File:** `notes/models.py`
+- **Field:** `wallet_address` (CharField, max_length=103, unique, nullable)
+- **Relationship:** OneToOne with User model
+- **Auto-creation:** Django signals automatically create Profile when User is created
+
+### Security Features Implemented
+- ✅ API key stored securely in `.env` file (not committed to git)
+- ✅ All API endpoints protected with `@login_required`
+- ✅ Server-side transaction construction (Blockfrost API key never exposed to frontend)
+- ✅ Input validation and error handling
+
+---
+
+## 🔗 GitHub Repository
+**URL:** https://github.com/Kzu0-afk/blockchain-notepad
