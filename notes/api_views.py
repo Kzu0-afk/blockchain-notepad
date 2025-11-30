@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from blockfrost import BlockFrostApi, ApiError
+from blockfrost import BlockFrostApi, ApiError, ApiUrls
 from pycardano import (
     Network,
     TransactionBuilder,
@@ -33,7 +33,7 @@ def save_wallet(request):
     
     Expected JSON payload:
     {
-        "wallet_address": "addr_test..."
+        "wallet_address": "addr_test..." (Bech32) OR "00..." (Hex-encoded CBOR)
     }
     
     Returns:
@@ -51,8 +51,28 @@ def save_wallet(request):
         if not wallet_address:
             return JsonResponse({'error': 'wallet_address is required'}, status=400)
         
+        # Convert Hex to Bech32 if necessary
+        try:
+            # Check if it's likely a hex string (no 'addr' prefix, even length)
+            if not wallet_address.startswith('addr') and len(wallet_address) % 2 == 0:
+                try:
+                    # Try to parse as hex bytes
+                    address_bytes = bytes.fromhex(wallet_address)
+                    # Convert to PyCardano Address object
+                    address_obj = Address.from_primitive(address_bytes)
+                    # Encode to Bech32
+                    wallet_address = address_obj.encode()
+                except ValueError as e:
+                    logger.warning(f"Hex conversion failed for {wallet_address}: {e}")
+                    return JsonResponse({'error': 'Invalid wallet address format. Please try reconnecting your wallet.'}, status=400)
+        except Exception as e:
+             logger.warning(f"Failed to convert address format: {e}")
+             return JsonResponse({'error': f'Address conversion error: {str(e)}'}, status=400)
+
         # Validate address format (basic check - Cardano addresses are typically 103 chars max)
-        if len(wallet_address) > 103:
+        # Note: Bech32 addresses can be longer than 103 chars (e.g. enterprise addresses or extensive headers),
+        # but for standard shelley addresses ~103 is typical. We'll relax this slightly or trust the previous step.
+        if len(wallet_address) > 150: # Increased limit to be safe
             return JsonResponse({'error': 'Invalid wallet address format'}, status=400)
         
         # Get or create user profile
@@ -121,12 +141,17 @@ def build_transaction(request):
         
         # Initialize Chain Context for Preview Testnet
         network = Network.TESTNET  # Preview Testnet uses TESTNET
-        context = BlockFrostChainContext(blockfrost_project_id, network)
+        context = BlockFrostChainContext(
+            project_id=blockfrost_project_id,
+            network=network,
+            base_url=ApiUrls.preview.value
+        )
         
         # Parse addresses
         try:
             sender_addr = Address.from_primitive(sender_address)
             recipient_addr = Address.from_primitive(recipient_address)
+            logger.info(f"Building transaction from {sender_address} to {recipient_address}")
         except Exception as e:
             return JsonResponse({'error': f'Invalid address format: {str(e)}'}, status=400)
         
@@ -157,11 +182,15 @@ def build_transaction(request):
             # - Calculate fees
             # - Create change output back to sender
             transaction = builder.build(change_address=sender_addr)
+            logger.info(f"Transaction built successfully for user {request.user.username}")
         except Exception as e:
+            logger.error(f"Transaction build failed: {str(e)}", exc_info=True)
             return JsonResponse({'error': f'Failed to build transaction: {str(e)}'}, status=500)
         
-        # Get transaction CBOR (unsigned) - returns hex string
-        unsigned_tx_cbor_hex = transaction.to_cbor()
+        # Get transaction CBOR (unsigned) - returns bytes, need to convert to hex string
+        # Fix for Lace wallet: explicitly send only the transaction body (CBOR Array / Type 4)
+        # instead of the full transaction object (CBOR Map / Type 5)
+        unsigned_tx_cbor_hex = transaction.transaction_body.to_cbor().hex()
         
         return JsonResponse({
             'unsigned_tx_cbor': unsigned_tx_cbor_hex
@@ -204,7 +233,10 @@ def submit_transaction(request):
             return JsonResponse({'error': 'Blockfrost API key not configured'}, status=500)
         
         # Initialize Blockfrost API
-        api = BlockFrostApi(project_id=blockfrost_project_id)
+        api = BlockFrostApi(
+            project_id=blockfrost_project_id,
+            base_url=ApiUrls.preview.value
+        )
 
         # Submit transaction to Blockfrost
         transaction_record = None
@@ -368,7 +400,10 @@ def wallet_dashboard(request):
             # Get Blockfrost API key from settings
             blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
             if blockfrost_project_id:
-                api = BlockFrostApi(project_id=blockfrost_project_id)
+                api = BlockFrostApi(
+                    project_id=blockfrost_project_id,
+                    base_url=ApiUrls.preview.value
+                )
                 try:
                     utxos = api.address_utxos(wallet_address)
                     balance_lovelace = sum(int(utxo['amount'][0]['quantity']) for utxo in utxos if utxo['amount'])
