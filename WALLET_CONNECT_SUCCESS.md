@@ -17,11 +17,14 @@ The application now supports full wallet connection, address storage, and transa
     4.  **Submit:** Sends signed CBOR to backend (`/api/submit-transaction/`).
 
 #### Backend (`notes/api_views.py`)
-- **Library:** Uses `pycardano` and `blockfrost-python`.
+- **Library:** Uses `pycardano>=0.10.0` and `blockfrost-python`.
 - **Network:** Configured for **Preview Testnet**.
+- **Transaction Building:**
+    -   Uses `pycardano.TransactionBuilder`.
+    -   **Critical Note:** In `pycardano >= 0.10.0`, `builder.build()` returns a `TransactionBody` object directly (CBOR Array / Type 4), which matches exactly what the Lace wallet expects for signing. No further extraction of `.transaction_body` is needed.
 - **Endpoints:**
     -   `POST /api/save-wallet/`: Accepts Hex or Bech32 addresses. Converts Hex -> Bech32 for storage.
-    -   `POST /api/build-transaction/`: Uses stored user address. Fetches UTXOs via Blockfrost. Returns **Hex-encoded CBOR** string.
+    -   `POST /api/build-transaction/`: Uses stored user address. Fetches UTXOs via Blockfrost. Returns **Hex-encoded CBOR** string of the transaction body.
     -   `POST /api/submit-transaction/`: Submits signed CBOR to Blockfrost.
 
 ### 2. Key Configuration

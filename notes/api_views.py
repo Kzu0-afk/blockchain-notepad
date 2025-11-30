@@ -13,6 +13,8 @@ from pycardano import (
     Value,
     Address,
     BlockFrostChainContext,
+    Transaction as CardanoTransaction,
+    TransactionWitnessSet,
 )
 from .models import Profile, Transaction
 from .exceptions import (
@@ -181,16 +183,19 @@ def build_transaction(request):
             # - Select sufficient inputs
             # - Calculate fees
             # - Create change output back to sender
-            transaction = builder.build(change_address=sender_addr)
+            tx_body = builder.build(change_address=sender_addr)
+            
+            # Wrap the body in a full Transaction object (Type 4 Array)
+            # Lace wallet expects a full Transaction structure, even if witnesses are empty initially
+            tx = CardanoTransaction(tx_body, TransactionWitnessSet())
+            
             logger.info(f"Transaction built successfully for user {request.user.username}")
         except Exception as e:
             logger.error(f"Transaction build failed: {str(e)}", exc_info=True)
             return JsonResponse({'error': f'Failed to build transaction: {str(e)}'}, status=500)
         
         # Get transaction CBOR (unsigned) - returns bytes, need to convert to hex string
-        # Fix for Lace wallet: explicitly send only the transaction body (CBOR Array / Type 4)
-        # instead of the full transaction object (CBOR Map / Type 5)
-        unsigned_tx_cbor_hex = transaction.transaction_body.to_cbor().hex()
+        unsigned_tx_cbor_hex = tx.to_cbor().hex()
         
         return JsonResponse({
             'unsigned_tx_cbor': unsigned_tx_cbor_hex
