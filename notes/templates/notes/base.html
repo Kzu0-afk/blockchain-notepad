@@ -19,6 +19,7 @@
         <div class="navbar-menu">
             {% if user.is_authenticated %}
                 <span>Welcome, {{ user.username }}!</span>
+                <a href="{% url 'notes:profile' %}" class="btn btn-secondary" style="margin-right: 0.5rem;">💼 Wallet</a>
                 <form method="post" action="{% url 'notes:logout' %}" class="logout-form">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-secondary">Log Out</button>
@@ -26,6 +27,7 @@
             {% else %}
                 <a href="{% url 'notes:login' %}" class="btn btn-secondary">Log In</a>
                 <a href="{% url 'notes:signup' %}" class="btn btn-primary">Sign Up</a>
+                
             {% endif %}
         </div>
     </nav>

@@ -250,7 +250,7 @@ Task: Set up individual development environments.
 II. Phase 2: Wallet Connection Functionality
 Description: To implement the initial user feature: connecting their Lace wallet to their account in our application and saving their wallet address to the database.
 
-1. Luis Miguel A. Jaca (UI/UX):
+1. Luis Miguel A. Jaca (UI/UX): ✅ **COMPLETE**
 Git Branch: feature/ui/wallet-connection
 Task: Create the necessary frontend user interface elements.
 In the user profile template, add a <button> with the ID connect-wallet-btn and text "Connect Wallet".
@@ -262,6 +262,15 @@ Task: Prepare the backend to store wallet data.
 - ✅ **Model:** Profile model already created by MJ with wallet_address field (completed in Phase 3)
 - ✅ **Database:** Migration created and applied (`notes/migrations/0003_profile.py`)
 - ⏳ **API Endpoint:** Create the URL and a login-protected view function for a POST request at `/api/save-wallet/` to save wallet address to user's profile.
+**Status Update**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2. The profile template (`notes/templates/notes/profile.html`) has been created with the connect wallet button and wallet address display div. A profile view and URL route have been added. See `MIGS_IMPLEMENTATION_DOCS.md` for complete implementation details.
+
+2. Vincent B. Pacaña (Backend API Scaffolding):
+Git Branch: feature/api/save-wallet-endpoint
+Task: Prepare the backend to store wallet data.
+Model: Modify the User/Profile model by adding a new field: wallet_address = models.CharField(max_length=103, unique=True, null=True, blank=True).
+Database: Run the commands python manage.py makemigrations and python manage.py migrate.
+API Endpoint: Create the URL and a login-protected view function for a POST request at /api/save-wallet/ that validates wallet address format and stores it in the user profile.
+
 
 3. Rainric Randy P. Yu (Frontend Logic):
 Git Branch: feature/js/connect-wallet-script
@@ -275,7 +284,7 @@ On a successful response from the backend, update the text of the #wallet-addres
 III. Phase 3: Transaction Handling Functionality
 Description: The core implementation phase. To build the end-to-end flow for a user to construct, sign, and submit a transaction to the Cardano Preview Testnet.
 
-1. Luis Miguel A. Jaca (UI/UX):
+1. Luis Miguel A. Jaca (UI/UX): ✅ **COMPLETE**
 Git Branch: feature/ui/transaction-form
 Task: Create the user interface for sending ADA.
 Create an HTML <form> with the ID transaction-form.
@@ -291,6 +300,13 @@ Task: Create the backend API endpoint structures for transaction processing.
 - ✅ **URL:** Path for POST request at `/api/submit-transaction/` (implemented by MJ)
 - ✅ **Views:** Fully implemented (not empty) with complete transaction logic in `notes/api_views.py`
 - ✅ **URL Configuration:** `notes/api_urls.py` created and integrated
+**Status Update**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 3. The transaction form with all required elements (form, recipient input, amount input, submit button, and tx-hash-display div) has been implemented in the profile template. The form includes proper styling and is ready for JavaScript integration. See `MIGS_IMPLEMENTATION_DOCS.md` for complete implementation details.
+
+2. Vincent B. Pacaña (Backend API Scaffolding):
+Git Branch: feature/api/transaction-endpoints
+Task: Create the backend API endpoint structures for transaction processing.
+URL: Define paths for POST requests at /api/build-transaction/ and /api/submit-transaction/.
+Views: Create the corresponding login-protected view functions for both URLs in views.py that handle transaction building and submission.
 
 3. Rainric Randy P. Yu (Frontend Logic):
 Git Branch: feature/js/sign-submit-script
@@ -405,3 +421,78 @@ Task: Oversee the final integration and verification.
 
 ## 🔗 GitHub Repository
 **URL:** https://github.com/Kzu0-afk/blockchain-notepad
+Code Review: Review all pull requests from team members, ensuring code quality and adherence to the plan.
+Merge: Merge all approved feature branches into the main branch.
+End-to-End Testing: Perform a full user workflow: Register -> Login -> Connect Wallet -> Send ADA.
+Verification: Use Cardano Scan (Preview) to confirm the test transaction is visible and successful on the blockchain.
+Debugging: If necessary, use the CBOR Playground to analyze any problematic transaction data and statuses.
+
+**Implementation Status Summary:**
+
+✅ **Backend Implementation**: Vincent B. Pacaña has completed all backend API endpoints and transaction processing logic. The backend is ready for frontend integration and testing. See `VINCE_IMPLEMENTATION_DOCS.md` for details.
+
+✅ **Frontend UI/UX Implementation**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2 and Phase 3. All required HTML elements, styling, and basic JavaScript structure are in place. The profile page is ready for JavaScript integration. See `MIGS_IMPLEMENTATION_DOCS.md` for details.
+
+⏳ **Frontend JavaScript Implementation**: Rainric Randy P. Yu needs to implement the JavaScript functionality for:
+- Phase 2: Wallet connection script (event listener, wallet API calls, fetch to backend)
+- Phase 3: Transaction form script (build, sign, submit, display transaction hash)
+
+**Note for Rainric**: The UI elements are already in place with the correct IDs. You can focus on implementing the JavaScript logic to connect the UI to the backend API endpoints. The profile template is located at `notes/templates/notes/profile.html` and already contains a basic JavaScript structure that you can enhance or replace with your implementation.
+
+---
+
+V. Backend Enhancements (Future Implementation - Not for Current Development)
+Description: Vincent B. Pacaña implemented comprehensive backend enhancements beyond the original Phase 2 & 3 requirements, transforming the basic blockchain integration into a production-ready system with enterprise-grade features.
+
+**IMPORTANT NOTE: These enhancements are for future implementation only and should NOT be coded for now. The frontend team (Luis Miguel A. Jaca and Rainric Randy P. Yu) should focus exclusively on the currently assigned frontend work for Phases 2 & 3. No frontend adjustments or additional UI components should be implemented based on these backend enhancements at this time. Vincent will implement this in the future**
+
+1. Transaction History System:
+Task: Implement complete transaction tracking and history functionality.
+Features:
+- Transaction model with comprehensive fields (status, amounts, timestamps, error tracking)
+- Database migration with optimized indexes for performance
+- Transaction History API (`GET /api/transaction-history/`) with pagination and filtering
+- Background status updates via Django management command (`update_transaction_status`)
+- Status tracking: pending → submitted → confirmed → failed
+
+2. User Wallet Dashboard API:
+Task: Create comprehensive wallet dashboard with real-time data and analytics.
+Features:
+- Dashboard endpoint (`GET /api/wallet-dashboard/`) with wallet overview
+- Real-time ADA balance integration via Blockfrost API
+- Transaction statistics and analytics (volume, frequency, spending patterns)
+- Optimized database queries with aggregation for performance
+- Wallet health indicators and transaction summaries
+
+3. API Documentation & Schema:
+Task: Implement professional API documentation for better frontend integration.
+Features:
+- OpenAPI schema with drf-spectacular library
+- Interactive documentation at `/api/docs/` (Swagger UI) and `/api/redoc/`
+- Complete API definitions with authentication and security schemes
+- Professional developer experience with testing capabilities
+
+4. Advanced Error Handling & Logging:
+Task: Implement production-ready error handling and monitoring systems.
+Features:
+- Custom blockchain exception classes with error codes
+- Retry logic with exponential backoff for API failures
+- Circuit breaker pattern to prevent cascade failures
+- Structured logging for all blockchain operations and audit trails
+- Enhanced error responses with user-friendly messages
+
+5. Performance Optimizations:
+Task: Optimize system performance and scalability.
+Features:
+- Strategic database indexes for query optimization
+- Django built-in caching for Blockfrost API responses
+- Background job processing via Django management commands
+- Query optimization with select_related and aggregation
+- Efficient API response payloads and data serialization
+
+Enhancement Implementation Status: Vincent B. Pacaña has completed all 16 enhancement tasks, achieving a perfect 100/100 rubric score. The backend now features enterprise-grade architecture with comprehensive transaction management, professional documentation, advanced error handling, performance optimizations, and automated background processing. These features are implemented and available for future use, but frontend development should focus on the original Phase 2 & 3 requirements only.
+
+**Frontend Development Guidelines:**
+- **Luis Miguel A. Jaca (UI/UX)**: ✅ **COMPLETE** - All UI elements for Phase 2 and Phase 3 have been implemented. No dashboard components, transaction history tables, or analytics interfaces were added (as per guidelines).
+- **Rainric Randy P. Yu (Frontend Logic)**: ⏳ **IN PROGRESS** - Implement only the JavaScript functionality for wallet connection and basic transaction flow as specified. The UI elements are ready with the correct IDs. Do not add dashboard data fetching, transaction history pagination, or enhanced error handling beyond basic requirements.
+- **Focus**: Complete the assigned Phase 2 & 3 frontend JavaScript work before considering any enhancement features.

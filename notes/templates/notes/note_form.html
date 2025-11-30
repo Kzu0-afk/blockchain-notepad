@@ -2,20 +2,200 @@
 {% block title %}{% if note %}Edit Note{% else %}Create Note{% endif %}{% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <h1>{% if note %}Edit Note{% else %}Create a New Note{% endif %}</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" value="{{ note.title|default:'' }}" required>
-        </div>
-        <div class="form-group">
-            <label for="description">Description:</label>
-            <textarea id="description" name="description" rows="10" cols="50">{{ note.description|default:'' }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Save Note</button>
-        <a href="{% url 'notes:note_list' %}" class="btn btn-secondary">Cancel</a>
-    </form>
+<style>
+.modern-form-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    margin: -2rem -1rem 0 -1rem;
+    position: relative;
+    overflow: hidden;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+}
+
+.modern-form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    animation: float 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.modern-form-box {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 25px;
+    padding: 3rem;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.modern-form-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 35px 70px rgba(0, 0, 0, 0.3);
+}
+
+.modern-form-box h1 {
+    color: #2c3e50;
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 2rem;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.modern-form-group {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.modern-form-group label {
+    display: block;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.modern-form-group input,
+.modern-form-group textarea {
+    width: 100%;
+    padding: 1.2rem 1.5rem;
+    border: 2px solid #e1e8ed;
+    border-radius: 15px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.modern-form-group input:focus,
+.modern-form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    background: rgba(255, 255, 255, 1);
+}
+
+.modern-form-group textarea {
+    resize: vertical;
+    min-height: 200px;
+    line-height: 1.6;
+}
+
+.modern-form-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+}
+
+.modern-btn {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-btn-primary {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.modern-btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.modern-btn-secondary {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    color: white;
+    box-shadow: 0 8px 25px rgba(149, 165, 166, 0.3);
+}
+
+.modern-btn-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(149, 165, 166, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.modern-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.modern-btn:hover::before {
+    left: 100%;
+}
+</style>
+
+<div class="modern-form-container">
+    <div class="modern-form-box">
+        <h1>{% if note %}✏️ Edit Note{% else %}✨ Create New Note{% endif %}</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modern-form-group">
+                <label for="title">📝 Note Title</label>
+                <input type="text" id="title" name="title" value="{{ note.title|default:'' }}" required placeholder="Enter your note title...">
+            </div>
+            <div class="modern-form-group">
+                <label for="description">📄 Description</label>
+                <textarea id="description" name="description" placeholder="Write your thoughts, ideas, or important information here...">{{ note.description|default:'' }}</textarea>
+            </div>
+            <div class="modern-form-actions">
+                <button type="submit" class="modern-btn modern-btn-primary">💾 Save Note</button>
+                <a href="{% url 'notes:note_list' %}" class="modern-btn modern-btn-secondary">❌ Cancel</a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

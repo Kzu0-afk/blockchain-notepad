@@ -2,33 +2,41 @@
 {% block title %}Log In{% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <h1>Log In</h1>
-    <form method="post">
-        {% csrf_token %}
+<style>
+@keyframes simpleWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+</style>
+<div class="enhanced-background" style="background: linear-gradient(45deg, #7357b2, #6877e0, #7357b2, #6877e0); background-size: 400% 400%; animation: simpleWave 6s ease-in-out infinite;">
+    <div class="form-container">
+        <h1 style="color: white !important; font-size: 2rem !important; font-weight: bold !important; text-align: center !important; margin-bottom: 1.5rem !important;">Log In</h1>
+        <form method="post">
+            {% csrf_token %}
 
-        {# non-field errors (e.g., wrong username/password) #}
-        {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {{ form.non_field_errors }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+                {{ form.username.errors }}
             </div>
-        {% endif %}
+            <div class="form-group">
+                {{ form.password.label_tag }}
+                {{ form.password }}
+                {{ form.password.errors }}
+            </div>
 
-        <div class="form-group">
-            {{ form.username.label_tag }}
-            {{ form.username }}
-            {{ form.username.errors }}
-        </div>
-        <div class="form-group">
-            {{ form.password.label_tag }}
-            {{ form.password }}
-            {{ form.password.errors }}
-        </div>
-
-        <button type="submit" class="btn btn-primary">Log In</button>
-    </form>
-    <p>Don't have an account?
-        <a href="{% url 'notes:signup' %}" class="btn btn-secondary">Sign up here</a>
-    </p>
+            <button type="submit" class="btn btn-primary">Log In</button>
+        </form>
+        <p>Don't have an account?
+            <a href="{% url 'notes:signup' %}" class="btn btn-secondary">Sign up here</a>
+        </p>
+    </div>
 </div>
 {% endblock %}
