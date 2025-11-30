@@ -1,6 +1,8 @@
 # notes/api_views.py
 
 import json
+import tempfile
+import os
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -185,20 +187,17 @@ def build_transaction(request):
             # - Create change output back to sender
             tx_body = builder.build(change_address=sender_addr)
             
-            # Wrap the body in a full Transaction object (Type 4 Array)
-            # Lace wallet expects a full Transaction structure, even if witnesses are empty initially
-            tx = CardanoTransaction(tx_body, TransactionWitnessSet())
-            
             logger.info(f"Transaction built successfully for user {request.user.username}")
         except Exception as e:
             logger.error(f"Transaction build failed: {str(e)}", exc_info=True)
             return JsonResponse({'error': f'Failed to build transaction: {str(e)}'}, status=500)
-        
-        # Get transaction CBOR (unsigned) - returns bytes, need to convert to hex string
-        unsigned_tx_cbor_hex = tx.to_cbor().hex()
+
+        # Get transaction body CBOR (not full transaction) - CIP-30 signTx expects just the body
+        # The transaction body is what gets signed by the wallet
+        unsigned_tx_body_cbor_hex = tx_body.to_cbor().hex()
         
         return JsonResponse({
-            'unsigned_tx_cbor': unsigned_tx_cbor_hex
+            'unsigned_tx_cbor': unsigned_tx_body_cbor_hex
         })
         
     except json.JSONDecodeError:
@@ -215,7 +214,8 @@ def submit_transaction(request):
     
     Expected JSON payload:
     {
-        "signed_tx_cbor": "hex-encoded-cbor-string"
+        "unsigned_tx_cbor": "hex-encoded-cbor-string",
+        "witness_cbor": "hex-encoded-cbor-string"
     }
     
     Returns:
@@ -226,17 +226,21 @@ def submit_transaction(request):
     try:
         # Parse request data
         data = json.loads(request.body)
-        signed_tx_cbor = data.get('signed_tx_cbor')
+        unsigned_tx_cbor = data.get('unsigned_tx_cbor')
+        witness_cbor = data.get('witness_cbor')
         
         # Validate input
-        if not signed_tx_cbor:
-            return JsonResponse({'error': 'signed_tx_cbor is required'}, status=400)
+        if not unsigned_tx_cbor or not witness_cbor:
+            return JsonResponse({'error': 'unsigned_tx_cbor and witness_cbor are required'}, status=400)
         
+        logger.info(f"Received unsigned_tx_cbor (body): {unsigned_tx_cbor[:50]}...")
+        logger.info(f"Received witness_cbor: {witness_cbor[:50]}...")
+
         # Get Blockfrost API key from settings
         blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
         if not blockfrost_project_id or blockfrost_project_id == '':
             return JsonResponse({'error': 'Blockfrost API key not configured'}, status=500)
-        
+
         # Initialize Blockfrost API
         api = BlockFrostApi(
             project_id=blockfrost_project_id,
@@ -245,10 +249,51 @@ def submit_transaction(request):
 
         # Submit transaction to Blockfrost
         transaction_record = None
+        temp_file_path = None
+        full_signed_tx_cbor_hex = None # Initialize variable for graceful error handling
         try:
-            # Blockfrost expects the transaction in hex format
-            # The signed_tx_cbor should already be in hex format from the frontend
-            tx_hash = api.submit_transaction(signed_tx_cbor)
+            # Reconstruct the full signed transaction
+            # unsigned_tx_cbor is now just the transaction body CBOR
+            from pycardano import TransactionBody
+            logger.info("Deserializing transaction body...")
+            tx_body = TransactionBody.from_cbor(bytes.fromhex(unsigned_tx_cbor))
+
+            logger.info("Deserializing witness set...")
+            witness_set = TransactionWitnessSet.from_cbor(bytes.fromhex(witness_cbor))
+
+            logger.info(f"Witness set contents: VKeys={len(witness_set.vkey_witnesses) if witness_set.vkey_witnesses else 0}")
+            if witness_set.vkey_witnesses:
+                for i, vkey_witness in enumerate(witness_set.vkey_witnesses):
+                    logger.info(f"VKey witness {i}: key_hash={vkey_witness.vkey.hash().payload.hex()}")
+
+            logger.info("Creating full signed transaction...")
+            # Create the full signed transaction
+            transaction = CardanoTransaction(tx_body, witness_set)
+
+            logger.info(f"Transaction body inputs: {len(tx_body.inputs)}")
+            for i, tx_input in enumerate(tx_body.inputs):
+                logger.info(f"Input {i}: {tx_input}")
+
+            logger.info(f"Witness set contents: VKeys={len(witness_set.vkey_witnesses) if witness_set.vkey_witnesses else 0}")
+            if witness_set.vkey_witnesses:
+                for i, vkey_witness in enumerate(witness_set.vkey_witnesses):
+                    logger.info(f"VKey witness {i}: key_hash={vkey_witness.vkey.hash().payload.hex()}")
+            else:
+                logger.warning("Witness set from wallet does not contain VKey witnesses!")
+
+            logger.info(f"Full transaction object after attaching witness set: {transaction}")
+            
+            full_signed_tx_cbor_hex = transaction.to_cbor().hex() # Store this for logging failures
+            logger.info(f"Full signed transaction CBOR hex ready for submission: {full_signed_tx_cbor_hex[:100]}...")
+
+            # Blockfrost Python SDK expects a file path for transaction_submit
+            # We need to write the binary CBOR of the *full signed transaction* to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(bytes.fromhex(full_signed_tx_cbor_hex))
+                temp_file_path = temp_file.name
+            
+            # Submit using the file path
+            tx_hash = api.transaction_submit(temp_file_path)
 
             # Create Transaction record for tracking
             # Note: recipient_address and amount_lovelace will be extracted from CBOR if needed
@@ -256,11 +301,13 @@ def submit_transaction(request):
             transaction_record = Transaction.objects.create(
                 user=request.user,
                 tx_hash=tx_hash,
-                signed_tx_cbor=signed_tx_cbor,
+                # Store the full signed transaction CBOR for audit/resubmission
+                signed_tx_cbor=full_signed_tx_cbor_hex,
                 status='submitted',
                 recipient_address='',  # Will be populated from transaction parsing if needed
                 amount_lovelace=0,  # Will be populated from transaction parsing if needed
             )
+
 
         except ApiError as e:
             # Create failed transaction record for audit trail
@@ -270,7 +317,7 @@ def submit_transaction(request):
 
             Transaction.objects.create(
                 user=request.user,
-                signed_tx_cbor=signed_tx_cbor,
+                signed_tx_cbor=full_signed_tx_cbor_hex if full_signed_tx_cbor_hex else unsigned_tx_cbor,
                 status='failed',
                 error_message=str(e),
                 error_code=status_code,
@@ -287,13 +334,17 @@ def submit_transaction(request):
             logger.error(f"Transaction submission failed: user={request.user.username}, error={str(e)}", exc_info=True)
             Transaction.objects.create(
                 user=request.user,
-                signed_tx_cbor=signed_tx_cbor,
+                signed_tx_cbor=full_signed_tx_cbor_hex if full_signed_tx_cbor_hex else unsigned_tx_cbor,
                 status='failed',
                 error_message=str(e),
                 recipient_address='',
                 amount_lovelace=0,
             )
             raise TransactionSubmitError(f'Failed to submit transaction: {str(e)}')
+        finally:
+            # Clean up temporary file
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
 
         return JsonResponse({
             'tx_hash': tx_hash,
