@@ -1,0 +1,19 @@
+{
+  "name": "blockchain-notepad-frontend",
+  "version": "1.0.0",
+  "description": "Frontend build pipeline for Blaze SDK integration",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@blaze-cardano/sdk": "^0.2.44",
+    "@utxorpc/blaze-provider": "^0.3.7",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-wasm": "^3.5.0"
+  }
+}
