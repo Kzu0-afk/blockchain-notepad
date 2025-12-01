@@ -1,15 +1,16 @@
 {% extends 'notes/base.html' %}
+{% load static %}
 {% block title %}{% if note %}Edit Note{% else %}Create Note{% endif %}{% endblock %}
 
 {% block content %}
 <style>
 .modern-form-container {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
+    /* min-height: 100vh; */ /* Removed to allow content to dictate height */
+    padding: 2rem; /* Keep some padding */
+    display: flex; /* Keep flex for centering */
+    align-items: center; /* Keep for vertical centering */
+    justify-content: center; /* Keep for horizontal centering */
     margin: -2rem -1rem 0 -1rem;
     position: relative;
     overflow: hidden;
@@ -41,14 +42,16 @@
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     border-radius: 25px;
-    padding: 3rem;
+    padding: 2rem; /* Reduced padding */
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.3);
     width: 100%;
-    max-width: 600px;
+    max-width: 480px; /* Reduced max-width for a smaller form */
     position: relative;
     z-index: 2;
     transition: all 0.3s ease;
+    margin-top: 2rem; /* Add some top margin to center if content is short */
+    margin-bottom: 2rem; /* Add some bottom margin */
 }
 
 .modern-form-box:hover {
@@ -58,10 +61,10 @@
 
 .modern-form-box h1 {
     color: #2c3e50;
-    font-size: 2.5rem;
+    font-size: 2rem; /* Slightly reduced font size */
     font-weight: 800;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem; /* Reduced margin */
     background: linear-gradient(45deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -70,7 +73,7 @@
 }
 
 .modern-form-group {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem; /* Reduced margin */
     position: relative;
 }
 
@@ -78,8 +81,8 @@
     display: block;
     font-weight: 700;
     color: #2c3e50;
-    margin-bottom: 0.8rem;
-    font-size: 1.1rem;
+    margin-bottom: 0.5rem; /* Reduced margin */
+    font-size: 1rem; /* Slightly reduced font size */
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -87,10 +90,10 @@
 .modern-form-group input,
 .modern-form-group textarea {
     width: 100%;
-    padding: 1.2rem 1.5rem;
+    padding: 1rem 1.2rem; /* Reduced padding */
     border: 2px solid #e1e8ed;
-    border-radius: 15px;
-    font-size: 1rem;
+    border-radius: 10px; /* Slightly reduced border-radius */
+    font-size: 0.95rem; /* Slightly reduced font size */
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
@@ -109,23 +112,23 @@
 
 .modern-form-group textarea {
     resize: vertical;
-    min-height: 200px;
-    line-height: 1.6;
+    min-height: 120px; /* Reduced min-height */
+    line-height: 1.5; /* Slightly reduced line-height */
 }
 
 .modern-form-actions {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem; /* Reduced gap */
     justify-content: center;
-    margin-top: 2.5rem;
+    margin-top: 2rem; /* Reduced margin */
 }
 
 .modern-btn {
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem; /* Reduced padding */
     border: none;
-    border-radius: 15px;
+    border-radius: 12px; /* Slightly reduced border-radius */
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.95rem; /* Slightly reduced font size */
     text-decoration: none;
     display: inline-block;
     transition: all 0.3s ease;
@@ -162,40 +165,89 @@
     text-decoration: none;
 }
 
-.modern-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s ease;
+.blockchain-section {
+    background: rgba(78, 205, 196, 0.1);
+    border: 2px dashed #4ecdc4;
+    border-radius: 15px;
+    padding: 1rem; /* Reduced padding */
+    margin-top: 1.5rem; /* Reduced margin */
 }
 
-.modern-btn:hover::before {
-    left: 100%;
+.blockchain-section h3 {
+    color: #2c3e50;
+    font-size: 1.1rem; /* Slightly reduced font size */
+    margin-bottom: 0.8rem; /* Reduced margin */
+    text-align: center;
 }
+
+.blockchain-hint {
+    display: block;
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem; /* Slightly reduced font size */
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
 </style>
 
 <div class="modern-form-container">
     <div class="modern-form-box">
         <h1>{% if note %}✏️ Edit Note{% else %}✨ Create New Note{% endif %}</h1>
-        <form method="post">
+        <form method="post" id="noteCreateForm">
             {% csrf_token %}
+            
+            <!-- Hidden input for transaction hash -->
+            <input type="hidden" name="tx_hash" id="tx_hash">
+
             <div class="modern-form-group">
                 <label for="title">📝 Note Title</label>
                 <input type="text" id="title" name="title" value="{{ note.title|default:'' }}" required placeholder="Enter your note title...">
             </div>
+            
             <div class="modern-form-group">
                 <label for="description">📄 Description</label>
                 <textarea id="description" name="description" placeholder="Write your thoughts, ideas, or important information here...">{{ note.description|default:'' }}</textarea>
             </div>
+
+            {% if not note %}
+            <!-- Blockchain Payment Section (Only for new notes) -->
+            <div class="blockchain-section">
+                <h3>⛓️ Attach Blockchain Payment (Optional)</h3>
+                <div class="modern-form-group">
+                    <label for="recipient">Recipient Address</label>
+                    <input type="text" id="recipient" name="recipient_address" placeholder="addr_test...">
+                </div>
+                <div class="modern-form-group">
+                    <label for="amount">Amount (Lovelace)</label>
+                    <input type="number" id="amount" name="amount" placeholder="Min 1000000 (1 ADA)" min="1000000" step="1000000">
+                </div>
+                <span class="blockchain-hint">Leave empty to save note without transaction.</span>
+            </div>
+            {% endif %}
+
             <div class="modern-form-actions">
-                <button type="submit" class="modern-btn modern-btn-primary">💾 Save Note</button>
+                <button type="submit" class="modern-btn modern-btn-primary">
+                    {% if note %}💾 Save Changes{% else %}💾 Save Note & Pay{% endif %}
+                </button>
                 <a href="{% url 'notes:note_list' %}" class="modern-btn modern-btn-secondary">❌ Cancel</a>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Load Wallet Scripts -->
+<script>
+    // Expose Blockfrost API key
+    window.BLOCKFROST_API_KEY = "{{ blockfrost_api_key|default:'' }}";
+    // Note: blockfrost_api_key might not be in context for all views, 
+    // but the JS will check for it or we rely on persisted wallet logic which might not strictly need it for *sending* if wallet is fully self-contained?
+    // Actually Blaze needs it for the provider. 
+    // We should ensure the view passes this context or it's available globally.
+    // For now, we'll assume it's passed or we need to add a context processor. 
+    // Let's assume the user will check `profile` first to set it up or we update views to pass it.
+</script>
+<script type="module" src="{% static 'js/dist/polyfills.js' %}"></script>
+<script type="module" src="{% static 'js/dist/blaze.js' %}"></script>
+<script type="module" src="{% static 'js/dist/wallet.js' %}"></script>
 {% endblock %}

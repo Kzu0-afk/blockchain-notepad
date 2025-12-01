@@ -211,12 +211,40 @@ Add a <div> with the ID wallet-address-display to show the user's connected addr
 
 **Status Update**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2. The profile template (`notes/templates/notes/profile.html`) has been created with the connect wallet button and wallet address display div. A profile view and URL route have been added. See `MIGS_IMPLEMENTATION_DOCS.md` for complete implementation details.
 
-2. Vincent B. Pacaña (Backend API Scaffolding):
-Git Branch: feature/api/save-wallet-endpoint
-Task: Prepare the backend to store wallet data.
-Model: Modify the User/Profile model by adding a new field: wallet_address = models.CharField(max_length=103, unique=True, null=True, blank=True).
-Database: Run the commands python manage.py makemigrations and python manage.py migrate.
-API Endpoint: Create the URL and a login-protected view function for a POST request at /api/save-wallet/ that validates wallet address format and stores it in the user profile.
+2. Vincent B. Pacaña (Complete System Refactor & Architecture):
+Git Branch: feature/complete-refactor
+**MAJOR ARCHITECTURAL CHANGE**: Completely refactored the entire system from client-server model to modern frontend-heavy architecture using Blaze SDK, Blockfrost, and Vite build pipeline.
+
+**Original Plan vs. New Implementation:**
+- **BEFORE**: Client-server model with Python transaction building and CBOR handling
+- **AFTER**: Frontend handles all blockchain operations via Blaze SDK, backend only manages user data
+
+**Complete Refactor Implementation:**
+1. **Frontend Architecture (Vite + Blaze SDK)**:
+   - Created `/frontend/` folder with Vite build pipeline
+   - Implemented Blaze SDK integration with Blockfrost provider
+   - Added WebWallet wrapper for CIP-30 compatibility
+   - Created polyfills for Node.js compatibility in browser
+   - Built wallet connection and transaction handling logic
+
+2. **Backend Simplification**:
+   - Removed all CBOR parsing and transaction building logic
+   - Simplified `save_wallet` endpoint to only handle Bech32 addresses
+   - Kept only metadata logging endpoints (`log_transaction`, `transaction_history`)
+   - Removed `build_transaction` and `submit_transaction` endpoints
+
+3. **Build Pipeline & Dependencies**:
+   - Vite configuration for ES module bundling
+   - WASM plugin for Cardano cryptographic operations
+   - Buffer polyfills for Node.js compatibility
+   - Clean separation of build-time vs runtime dependencies
+
+4. **Real Transaction Testing**:
+   - Successfully tested with real Lace wallet on Preview testnet
+   - Confirmed transaction submission to CardanoScan
+   - Validated end-to-end flow: Wallet → Blaze → Blockfrost → Blockchain
+
+**Status**: ✅ **COMPLETE** - Full system refactor implemented and battle-tested with real transactions. See `FINAL_REFACTOR_IMPLEMENTATION.md` for complete technical documentation.
 
 3. Rainric Randy P. Yu (Frontend Logic):
 Git Branch: feature/js/connect-wallet-script
@@ -247,28 +275,20 @@ Task: Create the backend API endpoint structures for transaction processing.
 URL: Define paths for POST requests at /api/build-transaction/ and /api/submit-transaction/.
 Views: Create the corresponding login-protected view functions for both URLs in views.py that handle transaction building and submission.
 
-3. Rainric Randy P. Yu (Frontend Logic): ✅ **FIXED & COMPLETE**
+3. Rainric Randy P. Yu (Original Frontend Logic):
 Git Branch: feature/js/sign-submit-script
-Status: Issues identified and resolved by Assistant AI
+**ARCHITECTURAL UPDATE**: Original JavaScript implementation has been replaced by Vincent's complete refactor using Blaze SDK and Vite build pipeline.
 
-**Original Issues Fixed:**
-- ❌ Removed incorrect `sender_address` parameter from `/api/build-transaction/` API request
-- ❌ Improved wallet address retrieval using `getRewardAddresses()` instead of `getUsedAddresses()`
-- ❌ Added network validation for Preview testnet addresses
-- ❌ Enhanced error handling and validation
+**Original Plan**: Manual CIP-30 wallet integration with backend API calls for transaction building/signing
+**Current Status**: Replaced by modern Blaze SDK implementation in `frontend/src/wallet-connection.js`
 
-**Current Implementation:**
-- ✅ JavaScript event listener for #transaction-form submission
-- ✅ Build Step: Fetches /api/build-transaction/ with recipient_address and amount_lovelace only
-- ✅ Sign Step: Uses wallet's api.signTx(unsignedTxCbor, true) for user signing prompt
-- ✅ Submit Step: Sends signed transaction CBOR to /api/submit-transaction/
-- ✅ Display Step: Shows transaction hash with Cardano Scan link on success
+**Key Changes**:
+- ❌ **REMOVED**: Manual `window.cardano` API calls and CBOR handling
+- ❌ **REMOVED**: Backend API calls to `/api/build-transaction/` and `/api/submit-transaction/`
+- ✅ **REPLACED BY**: Blaze SDK `WebWallet` wrapper and `Blockfrost` provider
+- ✅ **REPLACED BY**: Vite-bundled ES modules instead of inline scripts
 
-**Key Fixes Applied:**
-1. **API Parameter Fix**: Removed `sender_address` parameter that backend didn't expect
-2. **Address Retrieval**: Now uses `getRewardAddresses()` for more reliable address detection
-3. **Network Validation**: Ensures addresses start with `addr_test1p` for Preview testnet
-4. **Error Handling**: Added validation for self-sending, minimum amounts, and network checks
+**Status**: ✅ **SUPERSEDED** - Original implementation replaced by Vincent's Blaze SDK refactor. See `FINAL_REFACTOR_IMPLEMENTATION.md` for current frontend implementation.
 
 4. MJ (Backend Logic):
 Git Branch: feature/backend/transaction-logic
@@ -297,21 +317,27 @@ Debugging: If necessary, use the CBOR Playground to analyze any problematic tran
 
 **Implementation Status Summary:**
 
-✅ **Backend Implementation**: Vincent B. Pacaña has completed all backend API endpoints and transaction processing logic. The backend is ready for frontend integration and testing. See `VINCE_IMPLEMENTATION_DOCS.md` for details.
+🔄 **MAJOR ARCHITECTURAL UPDATE**: Vincent B. Pacaña has completely refactored the entire system from the original client-server approach to a modern frontend-heavy architecture using Blaze SDK.
 
-✅ **Frontend UI/UX Implementation**: Luis Miguel A. Jaca has completed all UI/UX tasks for Phase 2 and Phase 3. All required HTML elements, styling, and basic JavaScript structure are in place. The profile page is ready for JavaScript integration. See `MIGS_IMPLEMENTATION_DOCS.md` for details.
+**Original Implementation (Replaced):**
+- ❌ Client-server model with Python transaction building
+- ❌ Manual CIP-30 wallet integration
+- ❌ Backend CBOR processing and signing
 
-✅ **Frontend JavaScript Implementation**: Rainric Randy P. Yu - **COMPLETE**
-- Phase 2: Wallet connection script ✅ (event listener, wallet API calls, fetch to backend)
-- Phase 3: Transaction form script ✅ (build, sign, submit, display transaction hash)
+**New Implementation (Current):**
+- ✅ **Vincent B. Pacaña (Complete System Refactor)**: Implemented Blaze SDK + Vite build pipeline with real transaction testing
+- ✅ **Luis Miguel A. Jaca (UI/UX)**: UI elements remain compatible with new architecture
+- 🔄 **Rainric Randy P. Yu (Original Frontend Logic)**: Replaced by Vincent's Blaze SDK implementation
 
-**Implementation Status**: All JavaScript functionality has been implemented and tested. Critical bugs were identified and fixed by Assistant AI:
-- Removed incorrect API parameters causing transaction build failures
-- Improved wallet address detection for better reliability
-- Added comprehensive error handling and network validation
-- Enhanced user experience with better error messages
+**Key Achievements:**
+- ✅ **Real Transaction Testing**: Successfully sent ADA from Lace wallet to CardanoScan
+- ✅ **Modern Architecture**: Frontend handles all blockchain operations, backend manages user data
+- ✅ **Production Ready**: Vite bundling, polyfills, error handling, and comprehensive testing
+- ✅ **Battle-Tested**: End-to-end flow validated with live blockchain transactions
 
-**Ready for Testing**: The complete wallet integration is now ready for end-to-end testing with Lace wallet on Preview testnet.
+**Technical Documentation**: See `FINAL_REFACTOR_IMPLEMENTATION.md` for complete technical implementation details.
+
+**Status**: 🚀 **PRODUCTION READY** - System successfully refactored and tested with real blockchain transactions.
 
 ---
 

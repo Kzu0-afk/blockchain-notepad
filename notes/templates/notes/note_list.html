@@ -231,6 +231,53 @@ html {
     display: inline-block;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+/* New Styles for Transaction Badge */
+.tx-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(78, 205, 196, 0.15);
+    color: #00b894;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.tx-badge:hover {
+    background: rgba(78, 205, 196, 0.25);
+    text-decoration: none;
+    color: #00b894;
+    transform: translateY(-2px);
+}
+
+.tx-details {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+    border-top: 1px solid #eee;
+    padding-top: 0.5rem;
+}
+
+.tx-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+}
+
+.tx-label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.tx-value {
+    font-family: monospace;
+    color: #666;
+}
 </style>
 
 <div class="modern-notes-container">
@@ -250,6 +297,31 @@ html {
         {% for note in notes %}
         <div id="note-{{ note.pk }}" class="modern-note-card">
             <h2>{{ note.title }}</h2>
+            
+            {% if note.transaction %}
+            <div class="tx-badge-container">
+                <a href="https://preview.cardanoscan.io/transaction/{{ note.transaction.tx_hash }}" target="_blank" class="tx-badge">
+                    🔗 Blockchain Verified
+                </a>
+                <div class="tx-details">
+                    <div class="tx-info-row">
+                        <span class="tx-label">Amount:</span>
+                        <span class="tx-value">{{ note.transaction.get_amount_ada }} ₳</span>
+                    </div>
+                    <div class="tx-info-row">
+                        <span class="tx-label">Status:</span>
+                        <span class="tx-value">{{ note.transaction.status|title }}</span>
+                    </div>
+                    <div class="tx-info-row">
+                        <span class="tx-label">To:</span>
+                        <span class="tx-value" title="{{ note.transaction.recipient_address }}">
+                            {{ note.transaction.recipient_address|truncatechars:12 }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <p>{{ note.description }}</p>
             <small class="timestamp">Last updated: {{ note.updatedAt }}</small>
             <div class="note-actions">

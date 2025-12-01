@@ -6,28 +6,72 @@
     <title>{% block title %}My Notes{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        .wallet-status-indicator {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .wallet-status-indicator.connected {
+            background: linear-gradient(45deg, #00b894, #55efc4);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 184, 148, 0.3);
+            border: none;
+        }
+
+        .wallet-status-indicator.disconnected {
+            background: linear-gradient(45deg, #636e72, #b2bec3);
+            color: white;
+            opacity: 0.8;
+        }
+
+        .wallet-icon {
+            margin-right: 5px;
+        }
+        
+        /* Ensure nav menu items are aligned nicely */
+        .navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="navbar-brand">
             {% if user.is_authenticated %}
-                <a href="{% url 'notes:note_list' %}" style="color: white; text-decoration: none;">My Notes</a>
+                <a href="{% url 'notes:note_list' %}" style="color: white; text-decoration: none; font-weight: 800; font-size: 1.2rem;">⚡ BlockNotes</a>
             {% else %}
-                <a href="{% url 'notes:landing' %}" style="color: white; text-decoration: none;">My Notes</a>
+                <a href="{% url 'notes:landing' %}" style="color: white; text-decoration: none; font-weight: 800; font-size: 1.2rem;">⚡ BlockNotes</a>
             {% endif %}
         </div>
         <div class="navbar-menu">
             {% if user.is_authenticated %}
-                <span>Welcome, {{ user.username }}!</span>
-                <a href="{% url 'notes:profile' %}" class="btn btn-secondary" style="margin-right: 0.5rem;">💼 Wallet</a>
-                <form method="post" action="{% url 'notes:logout' %}" class="logout-form">
+                <a href="{% url 'notes:transaction_list' %}" class="btn btn-secondary" style="font-size: 0.9rem;">📊 History</a>
+                
+                <!-- Global Wallet Status (Updated by wallet-connection.js) -->
+                <span id="global-wallet-status" class="wallet-status-indicator disconnected">
+                    <span class="wallet-icon">🔌</span> Not Connected
+                </span>
+
+                <a href="{% url 'notes:profile' %}" class="btn btn-secondary" style="font-size: 0.9rem;">💼 Wallet</a>
+                
+                <form method="post" action="{% url 'notes:logout' %}" class="logout-form" style="margin: 0;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary">Log Out</button>
+                    <button type="submit" class="btn btn-secondary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">Log Out</button>
                 </form>
             {% else %}
                 <a href="{% url 'notes:login' %}" class="btn btn-secondary">Log In</a>
                 <a href="{% url 'notes:signup' %}" class="btn btn-primary">Sign Up</a>
-                
             {% endif %}
         </div>
     </nav>
@@ -45,9 +89,20 @@
     </main>
 
     <footer class="footer">
-        <p>&copy; 2025 My Notes App. All rights reserved.</p>
+        <p>&copy; 2025 BlockNotes App. Powered by Cardano ₳.</p>
     </footer>
 
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    
+    <!-- Global Script Configuration -->
+    <script>
+        // Expose Blockfrost API key to frontend for Blaze/Demeter
+        window.BLOCKFROST_API_KEY = "{{ blockfrost_api_key|default:'' }}";
+    </script>
+
+    <!-- Load Vite-built bundles -->
+    <script type="module" src="{% static 'js/dist/polyfills.js' %}"></script>
+    <script type="module" src="{% static 'js/dist/blaze.js' %}"></script>
+    <script type="module" src="{% static 'js/dist/wallet.js' %}"></script>
 </body>
 </html>

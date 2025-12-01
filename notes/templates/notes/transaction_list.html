@@ -1,0 +1,204 @@
+{% extends 'notes/base.html' %}
+{% block title %}My Transactions{% endblock %}
+
+{% block content %}
+<style>
+.modern-tx-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradientWave 8s ease infinite;
+    min-height: 100vh;
+    padding: 2rem;
+    margin: -2rem -1rem 0 -1rem;
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    color: #2c3e50;
+}
+
+@keyframes gradientWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.modern-tx-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    max-width: 1000px;
+    margin: 2rem auto;
+    position: relative;
+    z-index: 2;
+}
+
+.modern-tx-card h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 2rem;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.tx-table-wrapper {
+    overflow-x: auto;
+}
+
+.tx-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.tx-table th {
+    text-align: left;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+.tx-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.tx-table tr:last-child td {
+    border-bottom: none;
+}
+
+.tx-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.tx-status.submitted {
+    background: rgba(78, 205, 196, 0.15);
+    color: #00b894;
+}
+
+.tx-status.pending {
+    background: rgba(255, 234, 167, 0.25);
+    color: #d68910;
+}
+
+.tx-status.failed {
+    background: rgba(255, 107, 107, 0.15);
+    color: #d63031;
+}
+
+.tx-hash-link {
+    color: #667eea;
+    font-family: monospace;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tx-hash-link:hover {
+    text-decoration: underline;
+}
+
+.note-link {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.note-link:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+</style>
+
+<div class="modern-tx-container">
+    <div class="modern-tx-card">
+        <h1>📊 Transaction History</h1>
+        
+        {% if transactions %}
+        <div class="tx-table-wrapper">
+            <table class="tx-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Transaction Hash</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Linked Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if tx.tx_hash %}
+                            <a href="https://preview.cardanoscan.io/transaction/{{ tx.tx_hash }}" target="_blank" class="tx-hash-link">
+                                {{ tx.tx_hash|truncatechars:12 }} ↗
+                            </a>
+                            {% else %}
+                            <span class="text-muted">Pending...</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span title="{{ tx.recipient_address }}">
+                                {{ tx.recipient_address|truncatechars:12 }}
+                            </span>
+                        </td>
+                        <td style="font-weight: 600; color: #2c3e50;">
+                            {{ tx.get_amount_ada }} ₳
+                        </td>
+                        <td>
+                            <span class="tx-status {{ tx.status }}">
+                                {{ tx.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if tx.note %}
+                                <a href="{% url 'notes:note_edit' tx.note.pk %}" class="note-link">
+                                    📝 {{ tx.note.title|truncatechars:20 }}
+                                </a>
+                            {% else %}
+                                <span style="color: #aaa;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h3>No transactions found</h3>
+            <p>Transactions created via the Note form or Wallet Profile will appear here.</p>
+            <a href="{% url 'notes:note_create' %}" class="btn btn-primary" style="margin-top: 1rem;">Create Note & Pay</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

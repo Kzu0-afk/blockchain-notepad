@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
-from .models import Note, Profile
+from .models import Note, Profile, Transaction
 
 def landing_view(request):
     """Landing page for non-authenticated users"""
@@ -25,7 +25,11 @@ def note_edit_view(request, pk):
         note.save()
         messages.success(request, "Note updated successfully!")
         return redirect('notes:note_list')
-    return render(request, 'notes/note_form.html', {'note': note})
+    context = {
+        'note': note,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/note_form.html', context)
 
 @login_required
 def note_delete_view(request, pk):
@@ -37,7 +41,11 @@ def note_delete_view(request, pk):
         if request.headers.get('HX-Request'):
             return HttpResponse('')  # HTMX removes the element
         return redirect('notes:note_list')
-    return render(request, 'notes/note_confirm_delete.html', {'note': note})
+    context = {
+        'note': note,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/note_confirm_delete.html', context)
 
 def signup_view(request):
     if request.method == 'POST':
@@ -49,7 +57,11 @@ def signup_view(request):
             return redirect('notes:note_list')
     else:
         form = UserCreationForm()
-    return render(request, 'notes/signup.html', {'form': form})
+    context = {
+        'form': form,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/signup.html', context)
 
 def login_view(request):
     if request.method == 'POST':
@@ -61,7 +73,11 @@ def login_view(request):
             return redirect('notes:note_list')
     else:
         form = AuthenticationForm()
-    return render(request, 'notes/login.html', {'form': form})
+    context = {
+        'form': form,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/login.html', context)
 
 def logout_view(request):
     logout(request)
@@ -71,17 +87,53 @@ def logout_view(request):
 @login_required
 def note_list_view(request):
     notes = Note.objects.filter(createdBy=request.user, is_deleted=False).order_by('-updatedAt')
-    return render(request, 'notes/note_list.html', {'notes': notes})
+    context = {
+        'notes': notes,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/note_list.html', context)
 
 @login_required
 def note_create_view(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
-        Note.objects.create(title=title, description=description, createdBy=request.user)
-        messages.success(request, "Note created successfully!")
+        tx_hash = request.POST.get('tx_hash')
+
+        transaction = None
+        if tx_hash:
+            recipient = request.POST.get('recipient_address') # Matches name in form
+            amount = request.POST.get('amount') # Matches name in form
+            
+            # Create Transaction record
+            if recipient and amount:
+                transaction = Transaction.objects.create(
+                    user=request.user,
+                    tx_hash=tx_hash,
+                    recipient_address=recipient,
+                    amount_lovelace=int(amount),
+                    status='submitted' # Client already confirmed submission
+                )
+
+        # Create Note, optionally linked to Transaction
+        Note.objects.create(
+            title=title, 
+            description=description, 
+            createdBy=request.user,
+            transaction=transaction
+        )
+        
+        msg = "Note created successfully!"
+        if transaction:
+            msg += " (Blockchain Transaction Linked 🔗)"
+        
+        messages.success(request, msg)
         return redirect('notes:note_list')
-    return render(request, 'notes/note_form.html')
+    
+    context = {
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/note_form.html', context)
 
 @login_required
 def profile_view(request):
@@ -92,3 +144,13 @@ def profile_view(request):
         'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
     }
     return render(request, 'notes/profile.html', context)
+
+@login_required
+def transaction_list_view(request):
+    """List all blockchain transactions for the current user"""
+    transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
+    context = {
+        'transactions': transactions,
+        'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
+    }
+    return render(request, 'notes/transaction_list.html', context)

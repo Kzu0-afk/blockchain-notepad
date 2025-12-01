@@ -19,4 +19,5 @@ urlpatterns = [
     path('notes/<int:pk>/delete/', views.note_delete_view, name='note_delete'),
     # Profile & Wallet URLs
     path('profile/', views.profile_view, name='profile'),
+    path('history/', views.transaction_list_view, name='transaction_list'),
 ]

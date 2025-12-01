@@ -14,17 +14,139 @@ function detectWallets() {
 
 function updateWalletUI() {
     const select = document.getElementById("wallet-select");
-    if (!select) return;
+    if (select) { // Only run if element exists (profile page)
+        const wallets = detectWallets();
+        select.innerHTML = '<option value="">Select wallet...</option>';
+        if (wallets.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "No Cardano wallets found!";
+            opt.disabled = true;
+            select.appendChild(opt);
+        } else {
+            wallets.forEach(w => {
+                const opt = document.createElement("option");
+                opt.value = w.name;
+                opt.textContent = w.name.toUpperCase();
+                select.appendChild(opt);
+            });
+            // Try to pre-select Lace if available
+            if (wallets.some(w => w.name === "lace")) {
+                select.value = "lace";
+            } else if (localStorage.getItem("connectedWalletName")) {
+                // Pre-select last connected if still available
+                select.value = localStorage.getItem("connectedWalletName");
+            }
+        }
+    }
+}
 
-    const wallets = detectWallets();
-    select.innerHTML = '<option value="">Select wallet...</option>';
-    wallets.forEach(w => {
-        const opt = document.createElement("option");
-        opt.value = w.name;
-        opt.textContent = w.name.toUpperCase();
-        select.appendChild(opt);
-    });
-    if (wallets.some(w => w.name === "lace")) select.value = "lace";
+export function updateConnectedUI(walletName) {
+    // 1. Update Header Status (Global)
+    const headerWalletStatus = document.getElementById("global-wallet-status");
+    if (headerWalletStatus) {
+        headerWalletStatus.innerHTML = `
+            <span class="wallet-icon">✅</span> CONNECTED (${walletName.toUpperCase()})
+        `;
+        headerWalletStatus.classList.remove('disconnected');
+        headerWalletStatus.classList.add('connected');
+    }
+
+    // 2. Update Profile Page UI (Local)
+    const walletStatus = document.getElementById("wallet-status");
+    if (walletStatus) {
+        walletStatus.innerHTML = `
+            <strong>✅ ${walletName.toUpperCase()} Wallet Connected</strong><br>
+            <small>Ready to send ADA</small>
+            <br>
+            <button id="disconnectWalletBtn" style="
+                margin-top: 0.5rem;
+                background: #ff6b6b;
+                color: white;
+                border: none;
+                padding: 0.3rem 0.8rem;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 0.8rem;
+            ">❌ Disconnect</button>
+        `;
+
+        const disconnectBtn = document.getElementById("disconnectWalletBtn");
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener("click", disconnectWallet);
+        }
+        
+        // Hide connect controls on profile page
+        const connectBtn = document.getElementById("connectWalletBtn");
+        const select = document.getElementById("wallet-select");
+        if (connectBtn) connectBtn.style.display = 'none';
+        if (select) select.style.display = 'none';
+    }
+}
+
+export function updateDisconnectedUI() {
+    // 1. Reset Header UI
+    const headerWalletStatus = document.getElementById("global-wallet-status");
+    if (headerWalletStatus) {
+        headerWalletStatus.innerHTML = `
+            <span class="wallet-icon">🔌</span> Not Connected
+        `;
+        headerWalletStatus.classList.remove('connected');
+        headerWalletStatus.classList.add('disconnected');
+    }
+
+    // 2. Reset Profile Page UI (Local)
+    const walletStatus = document.getElementById("wallet-status");
+    if (walletStatus) {
+        walletStatus.innerHTML = "Status: Not Connected";
+    }
+
+    const connectBtn = document.getElementById("connectWalletBtn");
+    const select = document.getElementById("wallet-select");
+    if (connectBtn) connectBtn.style.display = 'block';
+    if (select) {
+        select.style.display = 'block';
+        select.value = ""; // Reset dropdown selection
+    }
+    updateWalletUI(); // Repopulate and potentially re-select if a wallet is detected
+}
+
+
+export function disconnectWallet() {
+    console.log("🔥 Disconnecting wallet...");
+    localStorage.removeItem("connectedWalletName");
+    walletApi = null;
+    
+    updateDisconnectedUI();
+
+    console.log("✅ Wallet disconnected");
+}
+
+export async function autoConnect() {
+    const savedWallet = localStorage.getItem("connectedWalletName");
+    if (savedWallet && window.cardano && window.cardano[savedWallet]) {
+        console.log(`🔥 Auto-connecting to saved wallet: ${savedWallet}`);
+        try {
+            const wallet = window.cardano[savedWallet];
+            walletApi = await wallet.enable();
+            await setWallet(walletApi);
+            console.log(`✅ Auto-connected to ${savedWallet}`);
+            
+            // Update ALL UI elements (header + profile)
+            updateConnectedUI(savedWallet);
+            
+            return true;
+        } catch (err) {
+            console.warn("⚠️ Auto-connect failed:", err);
+            // If auto-connect fails (e.g. user revoked permission), update UI to disconnected
+            updateDisconnectedUI();
+            // localStorage.removeItem("connectedWalletName"); // Consider clearing if user explicitly rejected
+        }
+    } else {
+        // If no saved wallet or wallet not detected, ensure UI is in disconnected state
+        updateDisconnectedUI();
+    }
+    return false;
 }
 
 export async function connectWallet(name) {
@@ -62,18 +184,10 @@ export async function connectWallet(name) {
         walletApi = await wallet.enable();
         await setWallet(walletApi);
 
-        const walletStatus = document.getElementById("wallet-status");
-        if (walletStatus) {
-            walletStatus.innerHTML = `
-                <strong>✅ ${name.toUpperCase()} Wallet Connected</strong><br>
-                <small>Ready to send ADA</small>
-            `;
-        }
+        // Persist connection
+        localStorage.setItem("connectedWalletName", name);
 
-        // Hide connect button and selector
-        const connectBtn = document.getElementById("connectWalletBtn");
-        if (connectBtn) connectBtn.style.display = 'none';
-        if (select) select.style.display = 'none';
+        updateConnectedUI(name);
 
         // Save wallet address to backend
         const hexAddress = await walletApi.getChangeAddress();
@@ -108,6 +222,7 @@ export async function connectWallet(name) {
     } catch (error) {
         console.error(`❌ ${name} wallet connection error:`, error);
         alert(`Wallet connection failed: ${error.message}`);
+        updateDisconnectedUI(); // Ensure UI resets if connection fails
     }
 }
 
@@ -138,8 +253,12 @@ export async function handleTransaction(event) {
     event.preventDefault();
 
     if (!walletApi) {
-        alert("Please connect your wallet first!");
-        return;
+        // Try auto-connect just in case
+        const connected = await autoConnect();
+        if (!connected) {
+            alert("Please connect your wallet first!");
+            return;
+        }
     }
 
     const address = document.getElementById("recipient").value.trim();
@@ -212,6 +331,58 @@ export async function handleTransaction(event) {
     }
 }
 
+export async function handleNoteTransaction(event) {
+    const recipient = document.getElementById("recipient")?.value.trim();
+    const amount = document.getElementById("amount")?.value.trim();
+    const txInput = document.getElementById("tx_hash");
+
+    // If fields are empty, allow normal form submission (no transaction)
+    if (!recipient || !amount) {
+        console.log("📝 Note creation without transaction");
+        return true; // Allow submit
+    }
+
+    event.preventDefault(); // Stop form for now
+    console.log("💸 Intercepting Note creation for payment...");
+
+    if (!walletApi) {
+        const connected = await autoConnect();
+        if (!connected) {
+            alert("Please connect your wallet first to send ADA!");
+            return false;
+        }
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.textContent : 'Submit';
+
+    try {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing Blockchain TX...';
+        }
+
+        const txHash = await sendAda(recipient, parseInt(amount));
+        console.log("✅ Payment successful:", txHash);
+
+        // Inject TX hash into hidden field
+        if (txInput) {
+            txInput.value = txHash;
+        }
+
+        // Submit the form programmatically
+        event.target.submit();
+        
+    } catch (err) {
+        console.error("Transaction error:", err);
+        alert("Payment Failed:\n" + err.message + "\n\nNote was NOT saved.");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
+}
+
 function getCSRFToken() {
     return document.cookie
         .split("; ")
@@ -219,10 +390,19 @@ function getCSRFToken() {
         ?.split("=")[1] || "";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     console.log("🔥 Wallet Connection DOM loaded, initializing...");
 
-    updateWalletUI();
+    // Update wallet UI initially (for profile page elements)
+    updateWalletUI(); 
+    
+    // Attempt auto-connect on EVERY page load
+    const connected = await autoConnect();
+
+    // If autoConnect didn't connect a wallet, ensure UI is in disconnected state
+    if (!connected) {
+        updateDisconnectedUI();
+    }
 
     const connectBtn = document.getElementById("connectWalletBtn");
     if (connectBtn) {
@@ -233,8 +413,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🔥 Connect button clicked, wallet:", walletName);
             connectWallet(walletName);
         });
-    } else {
-        console.warn("❌ Connect button not found");
     }
 
     const walletSelect = document.getElementById("wallet-select");
@@ -250,5 +428,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sendTxForm) {
         sendTxForm.addEventListener("submit", handleTransaction);
     }
-});
 
+    // Note creation form handler
+    const noteCreateForm = document.getElementById("noteCreateForm");
+    if (noteCreateForm) {
+        console.log("📝 Found note creation form");
+        noteCreateForm.addEventListener("submit", handleNoteTransaction);
+    }
+});

@@ -41,6 +41,15 @@ class Note(models.Model):
     # If a User is deleted, all their notes are also deleted (CASCADE).
     createdBy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notes")
 
+    # Link to a blockchain transaction (optional)
+    transaction = models.OneToOneField(
+        'Transaction',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='note'
+    )
+
     #soft delete field - notes will be marked as deleted instead of being removed from the database
     is_deleted = models.BooleanField(default=False)
 
