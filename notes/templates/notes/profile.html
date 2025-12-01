@@ -85,7 +85,33 @@
     text-align: center;
 }
 
-#connect-wallet-btn {
+.wallet-select {
+    width: 100%;
+    max-width: 400px;
+    padding: 1rem;
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: white;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.wallet-select:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+}
+
+.wallet-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#connectWalletBtn {
     background: linear-gradient(45deg, #4ecdc4, #45b7d1);
     border: none;
     border-radius: 50px;
@@ -101,18 +127,18 @@
     margin-bottom: 1.5rem;
 }
 
-#connect-wallet-btn:hover {
+#connectWalletBtn:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(78, 205, 196, 0.4);
 }
 
-#connect-wallet-btn:disabled {
+#connectWalletBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
 
-#wallet-address-display {
+#wallet-status {
     background: rgba(78, 205, 196, 0.1);
     border: 2px solid rgba(78, 205, 196, 0.3);
     border-radius: 12px;
@@ -157,7 +183,7 @@
     box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
 }
 
-#transaction-form button[type="submit"] {
+#sendTxForm button[type="submit"] {
     background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
     border: none;
     border-radius: 50px;
@@ -173,12 +199,12 @@
     margin-top: 1rem;
 }
 
-#transaction-form button[type="submit"]:hover {
+#sendTxForm button[type="submit"]:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
 }
 
-#transaction-form button[type="submit"]:disabled {
+#sendTxForm button[type="submit"]:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
@@ -231,29 +257,39 @@
         <!-- Phase 2: Wallet Connection Section -->
         <div class="profile-section wallet-connection">
             <h2>🔗 Connect Your Wallet</h2>
-            <button id="connect-wallet-btn">Connect Wallet</button>
-            <div id="wallet-address-display">Status: Not Connected</div>
+            <select id="wallet-select" class="wallet-select">
+                <option value="">Select a wallet...</option>
+                <option value="lace">Lace</option>
+                <option value="eternl">Eternl</option>
+                <option value="nami">Nami</option>
+                <option value="yoroi">Yoroi</option>
+                <option value="gero">Gero</option>
+                <option value="flint">Flint</option>
+                <option value="typhon">Typhon</option>
+            </select>
+            <button id="connectWalletBtn">Connect Selected Wallet</button>
+            <div id="wallet-status">Status: Not Connected</div>
         </div>
 
         <!-- Phase 3: Transaction Form Section -->
         <div class="profile-section">
             <h2>💸 Send ADA</h2>
-            <form id="transaction-form" class="transaction-form">
+            <form id="sendTxForm" class="transaction-form">
                 <div class="form-group">
-                    <label for="recipient-address-input">Recipient Address</label>
+                    <label for="recipient">Recipient Address</label>
                     <input 
                         type="text" 
-                        id="recipient-address-input" 
+                        id="recipient" 
                         name="recipient_address" 
                         placeholder="Enter recipient Cardano address (addr_test...)" 
                         required
                     />
                 </div>
                 <div class="form-group">
-                    <label for="amount-input">Amount (Lovelace)</label>
+                    <label for="amount">Amount (Lovelace)</label>
                     <input 
                         type="number" 
-                        id="amount-input" 
+                        id="amount" 
                         name="amount" 
                         placeholder="Enter amount in Lovelace (1 ADA = 1,000,000 Lovelace)" 
                         min="1000000"
@@ -261,14 +297,20 @@
                         required
                     />
                 </div>
-                <button type="submit">Build & Sign Transaction</button>
+                <button type="submit">Send ADA</button>
             </form>
             <div id="tx-hash-display" style="display: none;"></div>
         </div>
     </div>
 </div>
 
-<script src="{% static 'js/wallet-connection.js' %}"></script>
+<script>
+    // Expose Blockfrost API key to frontend for Blaze/Demeter
+    window.BLOCKFROST_API_KEY = "{{ blockfrost_api_key }}";
+</script>
+<script type="module" src="{% static 'js/dist/polyfills.js' %}"></script>
+<script type="module" src="{% static 'js/dist/blaze.js' %}"></script>
+<script type="module" src="{% static 'js/dist/wallet.js' %}"></script>
 {% endblock %}
 
 

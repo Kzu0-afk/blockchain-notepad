@@ -1,0 +1,10 @@
+{
+  "name": "blockchain-notepad",
+  "version": "1.0.0",
+  "description": "Django app with Blaze SDK for Cardano transactions",
+  "dependencies": {
+    "@blaze-cardano/sdk": "^0.2.44",
+    "@utxorpc/blaze-provider": "^0.3.7"
+  }
+}
+

@@ -19,8 +19,4 @@ urlpatterns = [
     path('notes/<int:pk>/delete/', views.note_delete_view, name='note_delete'),
     # Profile & Wallet URLs
     path('profile/', views.profile_view, name='profile'),
-
-    # WALLET & API ENDPOINTS
-    path('send-ada/', views.wallet_profile_view, name='send_ada'),
-    path('wallet/', views.wallet_profile_view, name='wallet_profile'),
 ]
