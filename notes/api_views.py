@@ -5,23 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from blockfrost import BlockFrostApi, ApiError
-from pycardano import (
-    Network,
-    TransactionBuilder,
-    TransactionOutput,
-    Value,
-    Address,
-    BlockFrostChainContext,
-)
+from blockfrost import BlockFrostApi, ApiUrls
 from .models import Profile, Transaction
-from .exceptions import (
-    BlockfrostAPIError,
-    TransactionSubmitError,
-)
 import logging
 
-# Configure structured logging
 logger = logging.getLogger('blockchain')
 
 
@@ -33,7 +20,7 @@ def save_wallet(request):
     
     Expected JSON payload:
     {
-        "wallet_address": "addr_test..."
+        "wallet_address": "addr_test..." (Bech32 format from CIP-30 wallet)
     }
     
     Returns:
@@ -43,16 +30,18 @@ def save_wallet(request):
     }
     """
     try:
-        # Parse request data
         data = json.loads(request.body)
         wallet_address = data.get('wallet_address')
         
-        # Validate input
         if not wallet_address:
             return JsonResponse({'error': 'wallet_address is required'}, status=400)
         
-        # Validate address format (basic check - Cardano addresses are typically 103 chars max)
-        if len(wallet_address) > 103:
+        # Validate Bech32 format (must start with 'addr')
+        if not wallet_address.startswith('addr'):
+            return JsonResponse({'error': 'Invalid wallet address format. Expected Bech32 address (starts with addr).'}, status=400)
+        
+        # Basic length validation
+        if len(wallet_address) > 150:
             return JsonResponse({'error': 'Invalid wallet address format'}, status=400)
         
         # Get or create user profile
@@ -67,6 +56,8 @@ def save_wallet(request):
         profile.wallet_address = wallet_address
         profile.save()
         
+        logger.info(f"Wallet address saved for user {request.user.username}: {wallet_address}")
+        
         return JsonResponse({
             'success': True,
             'wallet_address': profile.wallet_address
@@ -75,211 +66,63 @@ def save_wallet(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
     except Exception as e:
+        logger.error(f"Error saving wallet address: {str(e)}", exc_info=True)
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 
 @login_required
 @require_http_methods(["POST"])
-def build_transaction(request):
+def log_transaction(request):
     """
-    Build an unsigned transaction for the Cardano Preview Testnet.
+    Log transaction metadata after client-side submission via Blaze SDK.
+    
+    Stores only metadata (tx_hash, recipient, amount).
+    The transaction hash is sufficient to query all details from the blockchain.
     
     Expected JSON payload:
     {
-        "recipient_address": "addr_test...",
-        "amount_lovelace": 1000000
+        "tx_hash": "transaction-hash",           # From Blaze SDK after submission
+        "recipient_address": "addr_test...",      # Where ADA was sent
+        "amount_lovelace": 1000000                # Amount sent
     }
     
     Returns:
     {
-        "unsigned_tx_cbor": "hex-encoded-cbor-string"
+        "success": true,
+        "transaction_id": 123
     }
     """
     try:
-        # Parse request data
         data = json.loads(request.body)
-        recipient_address = data.get('recipient_address')
+        tx_hash = data.get('tx_hash')
+        recipient_address = data.get('recipient_address', '')
         amount_lovelace = int(data.get('amount_lovelace', 0))
         
-        # Validate input
-        if not recipient_address:
-            return JsonResponse({'error': 'recipient_address is required'}, status=400)
+        if not tx_hash:
+            return JsonResponse({'error': 'tx_hash is required'}, status=400)
         
-        if amount_lovelace <= 0:
-            return JsonResponse({'error': 'amount_lovelace must be greater than 0'}, status=400)
+        # Create transaction record
+        transaction_record = Transaction.objects.create(
+            user=request.user,
+            tx_hash=tx_hash,
+            recipient_address=recipient_address,
+            amount_lovelace=amount_lovelace,
+            status='submitted',  # Will be updated by background job
+        )
         
-        # Check if user has a wallet address
-        if not hasattr(request.user, 'profile') or not request.user.profile.wallet_address:
-            return JsonResponse({'error': 'Wallet not connected. Please connect your wallet first.'}, status=400)
-        
-        sender_address = request.user.profile.wallet_address
-        
-        # Get Blockfrost API key from settings
-        blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
-        if not blockfrost_project_id or blockfrost_project_id == '':
-            return JsonResponse({'error': 'Blockfrost API key not configured'}, status=500)
-        
-        # Initialize Chain Context for Preview Testnet
-        network = Network.TESTNET  # Preview Testnet uses TESTNET
-        context = BlockFrostChainContext(blockfrost_project_id, network)
-        
-        # Parse addresses
-        try:
-            sender_addr = Address.from_primitive(sender_address)
-            recipient_addr = Address.from_primitive(recipient_address)
-        except Exception as e:
-            return JsonResponse({'error': f'Invalid address format: {str(e)}'}, status=400)
-        
-        # Build transaction using TransactionBuilder
-        # The builder will automatically:
-        # 1. Fetch UTXOs from Blockfrost for the sender address
-        # 2. Select inputs needed to cover the amount + fees
-        # 3. Calculate fees
-        # 4. Create change output back to sender
-        try:
-            builder = TransactionBuilder(context)
-            
-            # Tell the builder which address to use for inputs (sender)
-            builder.add_input_address(sender_addr)
-            
-            # Add output to recipient
-            builder.add_output(
-                TransactionOutput(
-                    address=recipient_addr,
-                    amount=Value(coin=amount_lovelace)
-                )
-            )
-            
-            # Build transaction with change address
-            # This will automatically:
-            # - Fetch UTXOs for the input address(es)
-            # - Select sufficient inputs
-            # - Calculate fees
-            # - Create change output back to sender
-            transaction = builder.build(change_address=sender_addr)
-        except Exception as e:
-            return JsonResponse({'error': f'Failed to build transaction: {str(e)}'}, status=500)
-        
-        # Get transaction CBOR (unsigned) - returns hex string
-        unsigned_tx_cbor_hex = transaction.to_cbor()
+        logger.info(f"Transaction logged: tx_hash={tx_hash}, user={request.user.username}")
         
         return JsonResponse({
-            'unsigned_tx_cbor': unsigned_tx_cbor_hex
+            'success': True,
+            'transaction_id': transaction_record.id
         })
         
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
     except Exception as e:
+        logger.error(f"Failed to record transaction: {str(e)}", exc_info=True)
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
-
-@login_required
-@require_http_methods(["POST"])
-def submit_transaction(request):
-    """
-    Submit a signed transaction to the Cardano Preview Testnet.
-    
-    Expected JSON payload:
-    {
-        "signed_tx_cbor": "hex-encoded-cbor-string"
-    }
-    
-    Returns:
-    {
-        "tx_hash": "transaction-hash"
-    }
-    """
-    try:
-        # Parse request data
-        data = json.loads(request.body)
-        signed_tx_cbor = data.get('signed_tx_cbor')
-        
-        # Validate input
-        if not signed_tx_cbor:
-            return JsonResponse({'error': 'signed_tx_cbor is required'}, status=400)
-        
-        # Get Blockfrost API key from settings
-        blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
-        if not blockfrost_project_id or blockfrost_project_id == '':
-            return JsonResponse({'error': 'Blockfrost API key not configured'}, status=500)
-        
-        # Initialize Blockfrost API
-        api = BlockFrostApi(project_id=blockfrost_project_id)
-
-        # Submit transaction to Blockfrost
-        transaction_record = None
-        try:
-            # Blockfrost expects the transaction in hex format
-            # The signed_tx_cbor should already be in hex format from the frontend
-            tx_hash = api.submit_transaction(signed_tx_cbor)
-
-            # Create Transaction record for tracking
-            # Note: recipient_address and amount_lovelace will be extracted from CBOR if needed
-            # For now, we'll create a basic record and update it later if needed
-            transaction_record = Transaction.objects.create(
-                user=request.user,
-                tx_hash=tx_hash,
-                signed_tx_cbor=signed_tx_cbor,
-                status='submitted',
-                recipient_address='',  # Will be populated from transaction parsing if needed
-                amount_lovelace=0,  # Will be populated from transaction parsing if needed
-            )
-
-        except ApiError as e:
-            # Create failed transaction record for audit trail
-            error_details = getattr(e, 'body', 'No additional details')
-            status_code = getattr(e, 'status_code', None)
-            logger.error(f"Blockfrost API error: user={request.user.username}, status={status_code}, error={str(e)}")
-
-            Transaction.objects.create(
-                user=request.user,
-                signed_tx_cbor=signed_tx_cbor,
-                status='failed',
-                error_message=str(e),
-                error_code=status_code,
-                recipient_address='',
-                amount_lovelace=0,
-            )
-            raise BlockfrostAPIError(
-                f'Blockfrost API error: {str(e)}',
-                status_code=status_code,
-                api_response=error_details
-            )
-        except Exception as e:
-            # Create failed transaction record for audit trail
-            logger.error(f"Transaction submission failed: user={request.user.username}, error={str(e)}", exc_info=True)
-            Transaction.objects.create(
-                user=request.user,
-                signed_tx_cbor=signed_tx_cbor,
-                status='failed',
-                error_message=str(e),
-                recipient_address='',
-                amount_lovelace=0,
-            )
-            raise TransactionSubmitError(f'Failed to submit transaction: {str(e)}')
-
-        return JsonResponse({
-            'tx_hash': tx_hash,
-            'transaction_id': transaction_record.id if transaction_record else None
-        })
-
-    except BlockfrostAPIError as e:
-        return JsonResponse({
-            'error': e.message,
-            'error_code': e.error_code,
-            'details': e.details
-        }, status=400)
-    except TransactionSubmitError as e:
-        return JsonResponse({
-            'error': e.message,
-            'error_code': e.error_code,
-            'details': e.details
-        }, status=500)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
-    except Exception as e:
-        logger.error(f"Unexpected error in submit_transaction: {str(e)}", exc_info=True)
-        return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 @login_required
 @require_http_methods(["GET"])
@@ -368,7 +211,10 @@ def wallet_dashboard(request):
             # Get Blockfrost API key from settings
             blockfrost_project_id = settings.BLOCKFROST_PROJECT_ID
             if blockfrost_project_id:
-                api = BlockFrostApi(project_id=blockfrost_project_id)
+                api = BlockFrostApi(
+                    project_id=blockfrost_project_id,
+                    base_url=ApiUrls.preview.value
+                )
                 try:
                     utxos = api.address_utxos(wallet_address)
                     balance_lovelace = sum(int(utxo['amount'][0]['quantity']) for utxo in utxos if utxo['amount'])

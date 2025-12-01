@@ -40,23 +40,6 @@ class InvalidAddressError(BlockchainAPIError):
         super().__init__(message, error_code="INVALID_ADDRESS", details={'address': address})
 
 
-class TransactionBuildError(BlockchainAPIError):
-    """Raised when transaction building fails"""
-    def __init__(self, message, original_error=None):
-        super().__init__(message, error_code="TRANSACTION_BUILD_FAILED", details={
-            'original_error': str(original_error) if original_error else None
-        })
-
-
-class TransactionSubmitError(BlockchainAPIError):
-    """Raised when transaction submission fails"""
-    def __init__(self, message, tx_hash=None, blockfrost_error=None):
-        super().__init__(message, error_code="TRANSACTION_SUBMIT_FAILED", details={
-            'tx_hash': tx_hash,
-            'blockfrost_error': str(blockfrost_error) if blockfrost_error else None
-        })
-
-
 class BlockfrostAPIError(BlockchainAPIError):
     """Raised when Blockfrost API returns an error"""
     def __init__(self, message, status_code=None, api_response=None):

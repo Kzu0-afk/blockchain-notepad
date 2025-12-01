@@ -19,11 +19,5 @@ urlpatterns = [
     path('notes/<int:pk>/delete/', views.note_delete_view, name='note_delete'),
     # Profile & Wallet URLs
     path('profile/', views.profile_view, name='profile'),
-
-    # WALLET & API ENDPOINTS
-    path('send-ada/', views.wallet_profile_view, name='send_ada'),
-    path('wallet/', views.wallet_profile_view, name='wallet_profile'),
-    path('api/build-transaction/', views.build_transaction, name='build_transaction'),
-    path('api/submit-transaction/', views.submit_transaction, name='submit_transaction'),
-    path('api/save-wallet/', views.save_wallet, name='save_wallet'),
+    path('history/', views.transaction_list_view, name='transaction_list'),
 ]

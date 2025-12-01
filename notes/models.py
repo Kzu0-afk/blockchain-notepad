@@ -41,6 +41,15 @@ class Note(models.Model):
     # If a User is deleted, all their notes are also deleted (CASCADE).
     createdBy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notes")
 
+    # Link to a blockchain transaction (optional)
+    transaction = models.OneToOneField(
+        'Transaction',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='note'
+    )
+
     #soft delete field - notes will be marked as deleted instead of being removed from the database
     is_deleted = models.BooleanField(default=False)
 
@@ -72,9 +81,9 @@ class Transaction(models.Model):
     # Transaction status tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     
-    # Transaction CBOR data (for reference and retry capability)
-    unsigned_tx_cbor = models.TextField(null=True, blank=True)
-    signed_tx_cbor = models.TextField(null=True, blank=True)
+    # Note: CBOR fields (unsigned_tx_cbor, signed_tx_cbor) are deprecated
+    # Transactions are now built client-side via Blaze SDK
+    # Fields kept for backwards compatibility with existing data
     
     # Blockchain metadata
     block_height = models.IntegerField(null=True, blank=True)
