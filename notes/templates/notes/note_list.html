@@ -7,33 +7,49 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     background-size: 400% 400%;
     animation: gradientWave 8s ease infinite;
-    height: 100vh;
-    padding: 1rem;
+    min-height: calc(100vh - 80px); /* Adjust based on header/footer height */
+    padding: 2rem 1rem; /* Adjust padding */
     margin: -2rem -1rem 0 -1rem;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */ /* Removed to allow page scrolling */
     width: 100vw;
     margin-left: calc(-50vw + 50%);
+    padding-bottom: 4rem; /* Add padding for footer/pagination */
 }
 
-/* Hide scrollbar for webkit browsers */
+/* Re-enable scrollbar for webkit browsers */
 ::-webkit-scrollbar {
-    display: none;
+    display: block;
+    width: 8px; /* Standard scrollbar width */
+}
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
-/* Hide scrollbar for Firefox */
+/* Re-enable scrollbar for Firefox */
 html {
-    scrollbar-width: none;
+    scrollbar-width: thin; /* Standard scrollbar width */
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
 
-/* Ensure body doesn't have scrollbars */
+/* Ensure body can scroll */
 body {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-/* Prevent any scrolling on the page */
+/* Allow scrolling on the page */
 html {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .modern-notes-container::before {
@@ -68,16 +84,19 @@ html {
 
 .modern-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem; /* Reduced margin */
     position: relative;
     z-index: 2;
+    max-width: 800px; /* Constrain header width */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .modern-header h1 {
     color: white !important;
-    font-size: 3rem;
+    font-size: 2.5rem; /* Reduced font size */
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem; /* Reduced margin */
     text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
     background: none !important;
     -webkit-background-clip: unset !important;
@@ -89,9 +108,9 @@ html {
     background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
     border: none;
     border-radius: 50px;
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem; /* Reduced padding */
     color: white;
-    font-size: 1.2rem;
+    font-size: 1rem; /* Reduced font size */
     font-weight: 600;
     text-decoration: none;
     display: inline-block;
@@ -110,25 +129,29 @@ html {
 
 .notes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Adjusted minmax for smaller cards */
+    gap: 1rem; /* Reduced gap */
     position: relative;
     z-index: 2;
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-    padding-right: 1rem;
+    /* max-height: calc(100vh - 200px); */ /* Removed to allow page scrolling */
+    overflow-y: visible; /* Allow content to flow */
+    padding-right: 0; /* No need for special padding for scrollbar here */
+    max-width: 1000px; /* Constrain grid width */
+    margin: 0 auto; /* Center the grid */
 }
 
 .modern-note-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border-radius: 15px; /* Slightly reduced border-radius */
+    padding: 1.5rem; /* Reduced padding */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Reduced shadow */
     border: 1px solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    display: flex; /* Flexbox for internal layout */
+    flex-direction: column;
 }
 
 .modern-note-card::before {
@@ -137,55 +160,56 @@ html {
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 3px; /* Reduced height */
     background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
-    border-radius: 20px 20px 0 0;
+    border-radius: 15px 15px 0 0;
 }
 
 .modern-note-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    transform: translateY(-5px) scale(1.01); /* Reduced hover effect */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
 }
 
 .modern-note-card h2 {
     color: #2c3e50;
-    font-size: 1.5rem;
+    font-size: 1.3rem; /* Reduced font size */
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem; /* Reduced margin */
     line-height: 1.3;
 }
 
 .modern-note-card p {
     color: #666;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-    font-size: 1rem;
+    line-height: 1.5; /* Reduced line height */
+    margin-bottom: 1rem; /* Reduced margin */
+    font-size: 0.95rem; /* Reduced font size */
+    flex-grow: 1; /* Allow description to take available space */
 }
 
 .timestamp {
     color: #999;
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* Reduced font size */
     font-weight: 500;
     display: block;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem; /* Reduced margin */
 }
 
 .note-actions {
     display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    gap: 0.8rem; /* Reduced gap */
+    margin-top: auto; /* Push actions to the bottom */
 }
 
 .modern-btn {
-    padding: 0.8rem 1.5rem;
+    padding: 0.6rem 1.2rem; /* Reduced padding */
     border: none;
-    border-radius: 12px;
+    border-radius: 10px; /* Reduced border-radius */
     font-weight: 600;
     text-decoration: none;
     display: inline-block;
     transition: all 0.3s ease;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem; /* Reduced font size */
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -193,12 +217,12 @@ html {
 .btn-edit {
     background: linear-gradient(45deg, #4ecdc4, #45b7d1);
     color: white;
-    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+    box-shadow: 0 4px 10px rgba(78, 205, 196, 0.2);
 }
 
 .btn-edit:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
+    box-shadow: 0 6px 15px rgba(78, 205, 196, 0.3);
     color: white;
     text-decoration: none;
 }
@@ -206,43 +230,46 @@ html {
 .btn-delete {
     background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
     color: white;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.2);
 }
 
 .btn-delete:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 6px 15px rgba(255, 107, 107, 0.3);
 }
 
 .empty-state {
     text-align: center;
     color: white;
-    font-size: 1.2rem;
-    margin-top: 3rem;
+    font-size: 1.1rem; /* Reduced font size */
+    margin-top: 2rem; /* Reduced margin */
     position: relative;
     z-index: 2;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .empty-state p {
     background: rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    border-radius: 20px;
+    padding: 1.5rem; /* Reduced padding */
+    border-radius: 15px; /* Reduced border-radius */
     backdrop-filter: blur(10px);
     display: inline-block;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* New Styles for Transaction Badge */
+/* Styles for Transaction Badge */
 .tx-badge {
     display: inline-flex;
     align-items: center;
     background: rgba(78, 205, 196, 0.15);
     color: #00b894;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem; /* Reduced padding */
     border-radius: 50px;
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Reduced font size */
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem; /* Reduced margin */
     border: 1px solid rgba(78, 205, 196, 0.3);
     text-decoration: none;
     transition: all 0.2s ease;
@@ -256,8 +283,8 @@ html {
 }
 
 .tx-details {
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
+    margin-bottom: 1rem; /* Reduced margin */
+    font-size: 0.85rem; /* Reduced font size */
     color: #666;
     border-top: 1px solid #eee;
     padding-top: 0.5rem;
@@ -266,7 +293,7 @@ html {
 .tx-info-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.2rem; /* Reduced margin */
 }
 
 .tx-label {
@@ -277,6 +304,54 @@ html {
 .tx-value {
     font-family: monospace;
     color: #666;
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    position: relative;
+    z-index: 2;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 0.5rem;
+}
+
+.pagination-link, .current-page {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.pagination-link:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    color: white;
+    text-decoration: none;
+}
+
+.current-page {
+    background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+    border-color: #4ecdc4;
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.pagination-ellipsis {
+    color: white;
+    padding: 0.6rem 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 </style>
 
@@ -294,7 +369,7 @@ html {
     </div>
     
     <div class="notes-grid">
-        {% for note in notes %}
+        {% for note in page_obj %} <!-- Changed from 'notes' to 'page_obj' -->
         <div id="note-{{ note.pk }}" class="modern-note-card">
             <h2>{{ note.title }}</h2>
             
@@ -342,5 +417,29 @@ html {
         </div>
         {% endfor %}
     </div>
+
+    <!-- Pagination Controls (Added here) -->
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">Previous</a>
+        {% endif %}
+
+        {% for i in page_obj.paginator.page_range %}
+            {% if page_obj.number == i %}
+                <span class="current-page">{{ i }}</span>
+            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                <a href="?page={{ i }}" class="pagination-link">{{ i }}</a>
+            {% elif i == page_obj.number|add:'-3' or i == page_obj.number|add:'3' %}
+                <span class="pagination-ellipsis">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

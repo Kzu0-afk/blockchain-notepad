@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger # Import for pagination
 from .models import Note, Profile, Transaction
 
 def landing_view(request):
@@ -86,9 +87,23 @@ def logout_view(request):
 
 @login_required
 def note_list_view(request):
-    notes = Note.objects.filter(createdBy=request.user, is_deleted=False).order_by('-updatedAt')
+    all_notes = Note.objects.filter(createdBy=request.user, is_deleted=False).order_by('-updatedAt')
+    
+    # Pagination
+    paginator = Paginator(all_notes, 9) # Show 9 notes per page
+    page_number = request.GET.get('page')
+    try:
+        notes_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        notes_page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        notes_page = paginator.page(paginator.num_pages)
+
     context = {
-        'notes': notes,
+        'page_obj': notes_page,
+        'is_paginated': notes_page.has_other_pages(),
         'blockfrost_api_key': settings.BLOCKFROST_PROJECT_ID
     }
     return render(request, 'notes/note_list.html', context)
