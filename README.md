@@ -1,6 +1,6 @@
-# Blockchain Notepad (BlockNotes)
+# Blockchain Notepad (BlockNotes) 
 
-A simple, secure, and modern note-taking application powered by Django. This project serves as a foundational web application with user authentication and core note-management features.
+A simple, secure, and modern note-taking application powered by Django. This project serves as a foundational web application with user authentication and core note-management features and learn blockchain integration using Cardano and Blockfrost.
 
 ## Project Status: **Phase 1 Complete**
 
