@@ -105,6 +105,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    word-break: break-all;
+    white-space: normal;
 }
 
 .tx-hash-link:hover {
@@ -159,7 +161,7 @@
                         <td>
                             {% if tx.tx_hash %}
                             <a href="https://preview.cardanoscan.io/transaction/{{ tx.tx_hash }}" target="_blank" class="tx-hash-link">
-                                {{ tx.tx_hash|truncatechars:12 }} ↗
+                                {{ tx.tx_hash }} ↗
                             </a>
                             {% else %}
                             <span class="text-muted">Pending...</span>
